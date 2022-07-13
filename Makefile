@@ -72,7 +72,7 @@ clean:
 ## release:	will build & tag a clean repo with a version release and push the tag to the remote git
 release:
 	@echo "  >  Preparing release $(APP_EXECUTABLE) v$(APP_VERSION) rev: $(APP_REVISION) ..."
-	$(if $(@git status -s)  , (echo "OK : your repo is clean") ,(echo "ERROR : your local git repo is dirty : it contains modified and/or untracked files" && exit 1))
+	$(if $([[ -z $(git status -s) ]])  , (echo "OK : your repo is clean") ,(echo "ERROR : your local git repo is dirty : it contains modified and/or untracked files" && exit 1))
 	@git fetch  ||  (echo "ERROR : git fetch failed" && exit 1)
 	@git tag -l  "v${APP_VERSION}"  ||  (echo "ERROR : this git tag v${APP_VERSION} already exist" && exit 1)
 	git tag "v${APP_VERSION}" -m "v${APP_VERSION} bump"
