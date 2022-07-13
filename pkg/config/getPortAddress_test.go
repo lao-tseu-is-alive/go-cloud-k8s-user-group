@@ -77,6 +77,13 @@ func TestGetPortFromEnv(t *testing.T) {
 					t.Errorf("Unable to set env variable PORT")
 					return
 				}
+			} else {
+				// we do not want that an external setting of PORT breaks this test
+				err := os.Unsetenv("PORT")
+				if err != nil {
+					t.Errorf("Unable to unset env variable PORT")
+					return
+				}
 			}
 			got, err := GetPortFromEnv(tt.args.defaultPort)
 			if (err != nil) != tt.wantErr {
