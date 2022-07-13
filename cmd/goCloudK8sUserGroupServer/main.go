@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/config"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/users"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/version"
 	"log"
 	"net/http"
@@ -13,8 +14,11 @@ import (
 )
 
 const (
-	defaultPort = 8080
-	webRootDir  = "web"
+	defaultPort      = 8080
+	defaultDBPort    = 5432
+	defaultDBIp      = "127.0.0.1"
+	defaultDBSslMode = "disable"
+	webRootDir       = "web"
 )
 
 // content holds our static web server content.
@@ -44,20 +48,59 @@ func customHTTPErrorHandler(err error, c echo.Context) {
 	}
 }
 
+// GetNewServer initialize a new Echo server and returns it
+func GetNewServer(l *log.Logger, store users.Storage) *echo.Echo {
+	e := echo.New()
+	e.HideBanner = true
+	e.Use(middleware.CORS())
+	myUsersApi := users.Service{
+		Log:   l,
+		Store: store,
+	}
+	e.HideBanner = true
+	e.HTTPErrorHandler = customHTTPErrorHandler
+	//TODO  find a correct way to handle 404 in next handler, for now  is not used if we get /toto (only if method is not get)
+	e.GET("/*", contentHandler, contentRewrite)
+	/*
+		webRootDirPath, err := filepath.Abs(webRootDir)
+		if err != nil {
+			log.Fatalf("Problem getting absolute path of directory: %s\nError:\n%v\n", webRootDir, err)
+		}
+		if _, err := os.Stat(webRootDirPath); os.IsNotExist(err) {
+			log.Fatalf("The webRootDir parameter is wrong, %s is not a valid directory\nError:\n%v\n", webRootDirPath, err)
+		}
+		l.Printf("Using live mode serving from %s", webRootDirPath)
+		e.Static("/", webRootDirPath)
+	*/
+	// here the routes defined in OpenApi users.yaml are registered
+	users.RegisterHandlers(e, &myUsersApi)
+	// add another route for maxId
+	e.GET("/users/maxid", myUsersApi.GetMaxId)
+	return e
+}
+
 func main() {
 	l := log.New(os.Stdout, fmt.Sprintf("HTTP_SERVER_%s ", version.APP), log.Ldate|log.Ltime|log.Lshortfile)
 	l.Printf("INFO: 'Starting %s v:%s  rev:%s  build: %s'", version.APP, version.VERSION, version.REVISION, version.BuildStamp)
-	l.Printf("INFO: 'Repository url : https://%s'", version.REPOSITORY)
+	l.Printf("INFO: 'Repository url: https://%s'", version.REPOSITORY)
+	dbDsn, err := config.GetPgDbDsnUrlFromEnv(defaultDBIp, defaultDBPort,
+		version.APP, version.APP, defaultDBSslMode)
+	if err != nil {
+		log.Fatalf("💥💥 error doing config.GetPgDbDsnUrlFromEnv. error: %v\n", err)
+	}
+	l.Printf("INFO: 'dbDsn: %s'", dbDsn)
+	s, err := users.GetStorageInstance("postgres", dbDsn, l)
+	if err != nil {
+		l.Fatalf("💥💥 error getting Storage Instance : %v\n", err)
+	}
+	defer s.Close()
+
 	listenAddr, err := config.GetPortFromEnv(defaultPort)
 	if err != nil {
 		log.Fatalf("💥💥 ERROR: 'calling GetPortFromEnv got error: %v'\n", err)
 	}
 	l.Printf("INFO: 'Will start HTTP server listening on port %s'", listenAddr)
-	e := echo.New()
-	e.HideBanner = true
-	e.HTTPErrorHandler = customHTTPErrorHandler
-	//TODO  find a correct way to handle 404 in next handler, for now  is not used if we get /toto (only if method is not get)
-	e.GET("/*", contentHandler, contentRewrite)
+	e := GetNewServer(l, s)
 	err = e.Start(listenAddr)
 	if err != nil {
 		log.Fatalf("💥💥 ERROR: 'calling echo.Start(%s) got error: %v'\n", listenAddr, err)

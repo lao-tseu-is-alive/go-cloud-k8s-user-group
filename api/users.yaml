@@ -1,0 +1,229 @@
+---
+openapi: 3.0.0
+info:
+  title: User and group microservice written in Golang
+  description: OpenApi Specification for an API to manage User and Group
+  contact:
+    name: go-cloud-k8s-user-group API Team
+    url: https://goeland.io
+    email: go-cloud-k8s-user-group.team@goeland.io
+  license:
+    name: Apache 2.0
+    url: https://www.apache.org/licenses/LICENSE-2.0.html
+  version: 1.0.1
+servers:
+- url: https://user.goeland.io/api
+paths:
+  /users:
+    get:
+      summary: Returns all Users
+      description: Returns all the user's of the user
+      operationId: getUsers
+      parameters:
+      - name: limit
+        in: query
+        description: maximum number of results to return
+        required: false
+        style: form
+        explode: true
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: get user's response
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/User'
+        default:
+          description: unexpected Error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    post:
+      description: Creates a new user
+      operationId: createUser
+      requestBody:
+        description: User to add
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/NewUser'
+        required: true
+      responses:
+        "201":
+          description: User creation response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /users/{userId}:
+    get:
+      description: Retrieve a specific user
+      operationId: getUser
+      parameters:
+      - name: userId
+        in: path
+        description: Id of the user
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "200":
+          description: get user's successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        "404":
+          description: get user's response when userId was not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    put:
+      description: Updates the status of a user
+      operationId: updateUser
+      parameters:
+      - name: userId
+        in: path
+        description: Id of the user
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int32
+      requestBody:
+        description: status of the user
+        content:
+          application/x-www-form-urlencoded:
+            schema:
+              $ref: '#/components/schemas/users_userId_body'
+      responses:
+        "200":
+          description: put user's successful response
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/User'
+        "404":
+          description: put user's response when userId was not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      description: delete a user
+      operationId: deleteUser
+      parameters:
+      - name: userId
+        in: path
+        description: Id of the user
+        required: true
+        style: simple
+        explode: false
+        schema:
+          type: integer
+          format: int32
+      responses:
+        "204":
+          description: delete user's successful no content
+        "404":
+          description: delete user's response when userId was not found
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  schemas:
+    NewUser:
+      required:
+      - email
+      - name
+      - password_hash
+      - username
+      type: object
+      properties:
+        name:
+          minLength: 5
+          type: string
+        email:
+          minLength: 5
+          type: string
+        username:
+          minLength: 5
+          type: string
+        password_hash:
+          minLength: 5
+          type: string
+    User:
+      required:
+      - email
+      - id
+      - name
+      - password_hash
+      - username
+      - completed
+      type: object
+      properties:
+        id:
+          type: integer
+          format: int32
+        name:
+          minLength: 5
+          type: string
+        email:
+          minLength: 5
+          type: string
+        username:
+          minLength: 5
+          type: string
+        password_hash:
+          minLength: 5
+          type: string
+        completed:
+          type: boolean
+        created_at:
+          type: string
+          format: date-time
+        completed_at:
+          type: string
+          format: date-time
+    Error:
+      required:
+      - code
+      - message
+      type: object
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+    users_userId_body:
+      type: object
+      properties:
+        task:
+          type: string
+        completed:
+          type: boolean

@@ -85,7 +85,7 @@ endif
 # check some dependencies
 .PHONY: dependencies-openapi
 dependencies-openapi:
-	@command -v oapi-codegen >/dev/null 2>&1 || { printf >&2 "oapi-codegen is not installed, please run: go get github.com/jteeuwen/go-bindata/...\n"; exit 1; }
+	@command -v oapi-codegen >/dev/null 2>&1 || { printf >&2 "oapi-codegen is not installed, please run: go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@latest\n"; exit 1; }
 
 .PHONY: check-env
 check-env:
@@ -97,6 +97,14 @@ ifndef DB_PASSWORD
 	# if this variable is not defined you cannot initialise the docker postgres db correctly
 	$(error DB_PASSWORD is undefined)
 endif
+
+
+# for reason to use .Phony see : https://www.gnu.org/software/make/manual/html_node/Phony-Targets.html
+.PHONY: openapi-codegen
+## openapi-codegen:	will generate helper Go code for types & server based on OpenApi spec in api/app.yml
+openapi-codegen: dependencies-openapi
+	oapi-codegen --old-config-style -generate types -o pkg/users/users_types.gen.go -package users api/users.yaml
+	oapi-codegen --old-config-style -generate server -o pkg/users/users_server.gen.go -package users api/users.yaml
 
 
 .PHONY: help
