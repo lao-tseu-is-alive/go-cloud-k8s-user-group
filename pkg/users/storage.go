@@ -36,7 +36,7 @@ func GetStorageInstance(dbDriver, dbConnectionString string, log *log.Logger) (S
 	case "postgres":
 		db, err = NewPgxDB(dbConnectionString, runtime.NumCPU(), log)
 		if err != nil {
-			return nil, fmt.Errorf("error opening postgresql database with pgx driver: %s", err)
+			return nil, fmt.Errorf("error doing NewPgxDB(dbConnectionString : %v", err)
 		}
 	default:
 		return nil, errors.New("unsupported DB driver type")

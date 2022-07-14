@@ -38,7 +38,7 @@ func NewPgxDB(dbConnectionString string, maxConnectionsInPool int, log *log.Logg
 	var err error
 	parsedConfig, err = pgx.ParseConfig(dbConnectionString)
 	if err != nil {
-		return nil, err
+		return nil, errors.New(fmt.Sprintf("error doing pgx.ParseConfig(%s). err: %s", dbConnectionString, err))
 	}
 
 	dbHost := parsedConfig.Host

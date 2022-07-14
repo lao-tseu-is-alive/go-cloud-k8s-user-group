@@ -17,7 +17,7 @@ const (
 	defaultPort      = 8080
 	defaultDBPort    = 5432
 	defaultDBIp      = "127.0.0.1"
-	defaultDBSslMode = "disable"
+	defaultDBSslMode = "prefer"
 	webRootDir       = "web"
 )
 
@@ -80,7 +80,7 @@ func GetNewServer(l *log.Logger, store users.Storage) *echo.Echo {
 }
 
 func main() {
-	l := log.New(os.Stdout, fmt.Sprintf("HTTP_SERVER_%s ", version.APP), log.Ldate|log.Ltime|log.Lshortfile)
+	l := log.New(os.Stdout, fmt.Sprintf("%s ", version.APP), log.Ldate|log.Ltime|log.Lshortfile)
 	l.Printf("INFO: 'Starting %s v:%s  rev:%s  build: %s'", version.APP, version.VERSION, version.REVISION, version.BuildStamp)
 	l.Printf("INFO: 'Repository url: https://%s'", version.REPOSITORY)
 	dbDsn, err := config.GetPgDbDsnUrlFromEnv(defaultDBIp, defaultDBPort,
@@ -91,7 +91,7 @@ func main() {
 	l.Printf("INFO: 'dbDsn: %s'", dbDsn)
 	s, err := users.GetStorageInstance("postgres", dbDsn, l)
 	if err != nil {
-		l.Fatalf("💥💥 error getting Storage Instance : %v\n", err)
+		l.Fatalf("💥💥 error doing users.GetStorageInstance(postgres, dbDsn  : %v\n", err)
 	}
 	defer s.Close()
 
