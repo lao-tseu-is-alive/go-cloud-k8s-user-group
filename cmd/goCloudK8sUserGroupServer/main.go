@@ -6,6 +6,7 @@ import (
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/config"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/tools"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/users"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/version"
 	"log"
@@ -83,6 +84,8 @@ func main() {
 	l := log.New(os.Stdout, fmt.Sprintf("%s ", version.APP), log.Ldate|log.Ltime|log.Lshortfile)
 	l.Printf("INFO: 'Starting %s v:%s  rev:%s  build: %s'", version.APP, version.VERSION, version.REVISION, version.BuildStamp)
 	l.Printf("INFO: 'Repository url: https://%s'", version.REPOSITORY)
+	l.Printf("INFO: 'APP in snake: %s'", tools.ToSnakeCase(version.APP))
+	l.Printf("INFO: 'APP in kebab: %s'", tools.ToKebabCase(version.APP))
 	dbDsn, err := config.GetPgDbDsnUrlFromEnv(defaultDBIp, defaultDBPort,
 		version.APP, version.APP, defaultDBSslMode)
 	if err != nil {
