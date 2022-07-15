@@ -66,7 +66,7 @@ func GetPgxConn(dbConnectionString string, maxConnectionsInPool int, log *log.Lo
 			log.Printf("SUCCESS: metadata table was created rows affected : %v", int(commandTag.RowsAffected()))
 		}
 
-		log.Printf("INFO: 'Connected to Postgres DB version: [%s]'", version)
+		log.Printf("INFO: 'Postgres version: [%s]'", version)
 		if numberOfServicesSchema > 0 {
 			log.Printf("INFO: 'database contains %d service in metadata'", numberOfServicesSchema)
 		} else {

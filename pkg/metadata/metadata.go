@@ -2,8 +2,6 @@ package metadata
 
 const (
 	defaultServiceSchema = "public"
-	serviceDBVersion     = 1
-	serviceVersionMinor  = 0
 	CountMetaSQL         = "SELECT COUNT(*) as num FROM go_metadata_db_schema;"
 	countMetaServiceSQL  = "SELECT COUNT(*) as num FROM go_metadata_db_schema WHERE service = $1;"
 	selectMetaSQL        = "SELECT  id, service, schema, table_name, version FROM go_metadata_db_schema WHERE service = $1"

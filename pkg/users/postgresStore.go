@@ -5,24 +5,55 @@ import (
 	"errors"
 	"fmt"
 	"github.com/georgysavva/scany/pgxscan"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/config"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/crypto"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/database"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/version"
 	"log"
 	"time"
 )
 
 const (
-	usersList       = "SELECT id, name, completed, created_at, completed_at FROM users ORDER BY id;"
-	usersGet        = "SELECT id, name, completed, created_at, completed_at FROM users WHERE id=$1;"
-	usersCompleted  = "SELECT completed FROM users WHERE id=$1"
-	usersExist      = "SELECT COUNT(*) FROM users WHERE id=$1"
-	usersCount      = "SELECT COUNT(*) FROM users"
-	usersMaxId      = "SELECT MAX(id) FROM users"
-	usersCreate     = "INSERT INTO users (name) VALUES($1) RETURNING id;"
-	usersUpdate     = "UPDATE users SET name=$1, completed=$2, completed_at=$3 WHERE id=$4"
-	usersUpdateName = "UPDATE users SET name=$1 WHERE id=$2"
-	usersDelete     = "DELETE FROM users WHERE id = $1"
-	insertAdminUser = `INSERT INTO go_user (name, email, username, password_hash, is_admin, creator, comment) 
-	VALUES ($1,$2,$3,$4, true, 1, 'Initial initDBSchema Setup Admin account');`
+	usersList        = "SELECT id, name, completed, created_at, completed_at FROM go_users ORDER BY id;"
+	usersGet         = "SELECT id, name, completed, created_at, completed_at FROM go_users WHERE id=$1;"
+	usersCompleted   = "SELECT completed FROM go_users WHERE id=$1"
+	usersExist       = "SELECT COUNT(*) FROM go_users WHERE id=$1"
+	usersCount       = "SELECT COUNT(*) FROM go_users"
+	usersMaxId       = "SELECT MAX(id) FROM go_users"
+	usersCreate      = "INSERT INTO go_users (name) VALUES($1) RETURNING id;"
+	usersUpdate      = "UPDATE go_users SET name=$1, completed=$2, completed_at=$3 WHERE id=$4"
+	usersUpdateName  = "UPDATE go_users SET name=$1 WHERE id=$2"
+	usersDelete      = "DELETE FROM go_users WHERE id = $1"
+	usersCreateTable = `
+CREATE TABLE IF NOT EXISTS go_users
+(
+    id        	serial    CONSTRAINT go_users_pk   primary key,
+    name			text	not null	constraint go_user_unique_name	unique
+        								constraint name_min_length check (length(btrim(name)) > 1),
+    email			text	not null	constraint go_user_unique_email unique
+										constraint email_min_length	check (length(btrim(email)) > 1),
+    username		text	not null	constraint go_user_unique_username unique
+										constraint username_min_length check (length(btrim(username)) > 1),
+    password_hash	text	not null,
+    enterprise		text,
+    phone			text,
+    is_locked		boolean   default false not null,
+    is_admin		boolean   default false not null,
+    create_time		timestamp default now() not null,
+    creator			integer	not null,
+    last_modification_time	timestamp,
+    last_modification_user	integer,
+    is_active				boolean default true not null,
+    inactivation_time		timestamp,
+    inactivation_reason    	text,
+    comment                	text,
+    bad_password_count     	integer default 0 not null
+);
+comment on table go_users is 'go_user is the main table of the GO_USER microservice';
+`
+	insertAdminUser = `
+INSERT INTO go_users (name, email, username, password_hash, is_admin, creator, comment) 
+VALUES ('Initial Administrative Account','admin@example.com',$1,$2, true, 1, 'Initial Setup of Admin account')  RETURNING id;`
 )
 
 type PGX struct {
@@ -39,16 +70,61 @@ func NewPgxDB(dbConnectionString string, maxConnectionsInPool int, log *log.Logg
 		successOrFailure = "FAILED"
 		log.Printf("Connecting to database : %s \n", successOrFailure)
 		return nil, errors.New(fmt.Sprintf("error connecting to database. err : %s", err))
-	} else {
-		log.Printf("INFO: 'Connection to database : %s'\n", successOrFailure)
-		var numberOfUsers int
-		if errTodosTable := pgxPool.Conn.QueryRow(context.Background(), usersCount).Scan(&numberOfUsers); errTodosTable != nil {
-			log.Printf("ERROR: 'the database does not contain the table «users» !'")
-			return nil, errors.New("database does not contain the table «users»")
-		}
-		log.Printf("INFO: 'database contains %d records in users'", numberOfUsers)
 	}
-
+	log.Printf("INFO: 'Connection to database : %s'\n", successOrFailure)
+	var numberOfServicesSchema int
+	errMetaTable := pgxPool.Conn.QueryRow(context.Background(), countMetaUserServiceSQL).Scan(&numberOfServicesSchema)
+	if errMetaTable != nil {
+		log.Printf("WARNING: problem counting the rows in metadata table : %v", errMetaTable)
+		return nil, errors.New("unable to countMetaUserServiceSQL")
+	}
+	if numberOfServicesSchema < 1 {
+		log.Printf("WARNING: database does not contain this service in the metadata table, will try to insert it  ! ")
+		var lastInsertId int = 0
+		err := pgxPool.Conn.QueryRow(context.Background(), insertMetaUserService, version.VERSION).Scan(&lastInsertId)
+		if err != nil {
+			log.Printf("ERROR: insertMetaUserService ver:(%s) unexpectedly failed. error : %v", version.VERSION, err)
+			return nil, errors.New("unable to insert metadata for the service table «go_user» ")
+		}
+		log.Printf("INFO: insertMetaUserService ver:(%s) (%v) created with id : %d", version.VERSION, lastInsertId)
+	}
+	var numberOfUsers int
+	errUsersTable := pgxPool.Conn.QueryRow(context.Background(), usersCount).Scan(&numberOfUsers)
+	if errUsersTable != nil {
+		log.Printf("WARNING: problem counting the rows in «go_user» table : %v", errUsersTable)
+		log.Printf("WARNING: 'the database does not contain the table «go_user»  wil try to create it!'")
+		commandTag, err := pgxPool.Conn.Exec(context.Background(), usersCreateTable)
+		if err != nil {
+			log.Printf("ERROR: problem creating the «go_user» table : %v", err)
+			return nil, errors.New("unable to create the table «go_user» ")
+		}
+		log.Printf("SUCCESS: «go_user» table was created rows affected : %v", int(commandTag.RowsAffected()))
+	}
+	if numberOfUsers > 0 {
+		log.Printf("INFO: 'database contains %d records in «go_user»'", numberOfUsers)
+		//TODO: update the password for admin user id=1 with actual env value
+	} else {
+		log.Printf("WARNING: '«go_user» contain %d records : creating go-admin user'", numberOfUsers)
+		adminUser := config.GetAdminUserFromFromEnv("admin")
+		adminPassword, err := config.GetAdminPasswordFromFromEnv()
+		if err != nil {
+			log.Printf("ERROR: 'GetAdminPasswordFromFromEnv returned error : %v'", err)
+			return nil, errors.New("unable to retrieve a valid admin password GetAdminPasswordFromFromEnv")
+		}
+		var lastInsertId int = 0
+		passwordHash := crypto.Sha256Hash(adminPassword)
+		goHash, err := crypto.HashAndSalt(passwordHash)
+		if err != nil {
+			log.Printf("ERROR: crypto.HashAndSalt unexpectedly failed. error : %v", err)
+			return nil, errors.New("unable to calculate hash for the admin password ")
+		}
+		err = pgxPool.Conn.QueryRow(context.Background(), insertAdminUser, adminUser, goHash).Scan(&lastInsertId)
+		if err != nil {
+			log.Printf("ERROR: insertAdminUser adminUser:(%s) unexpectedly failed. error : %v", adminUser, err)
+			return nil, errors.New("unable to insert adminUser in table «go_user» ")
+		}
+		log.Printf("INFO: insertAdminUser adminUser:(%s) (%v) created with id : %d", adminUser, lastInsertId)
+	}
 	psql.Db = pgxPool
 	psql.log = log
 	return &psql, err
