@@ -91,7 +91,7 @@ func main() {
 	if err != nil {
 		log.Fatalf("💥💥 error doing config.GetPgDbDsnUrlFromEnv. error: %v\n", err)
 	}
-	l.Printf("INFO: 'dbDsn: %s'", dbDsn)
+	//l.Printf("INFO: 'dbDsn: %s'", dbDsn)
 	s, err := users.GetStorageInstance("postgres", dbDsn, l)
 	if err != nil {
 		l.Fatalf("💥💥 error doing users.GetStorageInstance(postgres, dbDsn  : %v\n", err)

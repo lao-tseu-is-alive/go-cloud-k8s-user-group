@@ -40,7 +40,6 @@ func GetStorageInstance(dbDriver, dbConnectionString string, log *log.Logger) (S
 		}
 	default:
 		return nil, errors.New("unsupported DB driver type")
-
 	}
 	return db, nil
 }
