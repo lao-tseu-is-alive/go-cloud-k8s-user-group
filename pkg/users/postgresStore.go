@@ -29,12 +29,13 @@ CREATE TABLE IF NOT EXISTS go_users
 (
     id        	serial    CONSTRAINT go_users_pk   primary key,
     name			text	not null	constraint go_user_unique_name	unique
-        								constraint name_min_length check (length(btrim(name)) > 1),
+        								constraint name_min_length check (length(btrim(name)) > 2),
     email			text	not null	constraint go_user_unique_email unique
-										constraint email_min_length	check (length(btrim(email)) > 1),
+										constraint email_min_length	check (length(btrim(email)) > 3),
     username		text	not null	constraint go_user_unique_username unique
-										constraint username_min_length check (length(btrim(username)) > 1),
-    password_hash	text	not null,
+										constraint username_min_length check (length(btrim(username)) > 2),
+    password_hash	text	not null 	constraint password_hash_min_length check (length(btrim(username)) > 32),
+	external_id		text,
     enterprise		text,
     phone			text,
     is_locked		boolean   default false not null,
