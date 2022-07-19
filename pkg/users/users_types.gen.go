@@ -5,6 +5,12 @@ package users
 
 import (
 	"time"
+
+	openapi_types "github.com/deepmap/oapi-codegen/pkg/types"
+)
+
+const (
+	JWTAuthScopes = "JWTAuth.Scopes"
 )
 
 // Error defines model for Error.
@@ -13,30 +19,62 @@ type Error struct {
 	Message string `json:"message"`
 }
 
+// JsonWebToken defines model for JsonWebToken.
+type JsonWebToken struct {
+	Token string `json:"token"`
+}
+
 // NewUser defines model for NewUser.
 type NewUser struct {
-	Email        string `json:"email"`
-	Name         string `json:"name"`
-	PasswordHash string `json:"password_hash"`
-	Username     string `json:"username"`
+	Comment      *string `json:"comment,omitempty"`
+	Email        string  `json:"email"`
+	Enterprise   *string `json:"enterprise,omitempty"`
+	ExternalId   *string `json:"external_id,omitempty"`
+	IsAdmin      *bool   `json:"is_admin,omitempty"`
+	Name         string  `json:"name"`
+	PasswordHash string  `json:"password_hash"`
+	Phone        *string `json:"phone,omitempty"`
+	Username     string  `json:"username"`
 }
 
 // User defines model for User.
 type User struct {
-	Completed    bool       `json:"completed"`
-	CompletedAt  *time.Time `json:"completed_at,omitempty"`
-	CreatedAt    *time.Time `json:"created_at,omitempty"`
-	Email        string     `json:"email"`
-	Id           int32      `json:"id"`
-	Name         string     `json:"name"`
-	PasswordHash string     `json:"password_hash"`
-	Username     string     `json:"username"`
+	BadPasswordCount     *int32              `json:"bad_password_count,omitempty"`
+	Comment              *string             `json:"comment,omitempty"`
+	CreateTime           *time.Time          `json:"create_time,omitempty"`
+	Creator              *int32              `json:"creator,omitempty"`
+	Email                openapi_types.Email `json:"email"`
+	Enterprise           *string             `json:"enterprise,omitempty"`
+	ExternalId           *string             `json:"external_id,omitempty"`
+	Id                   int32               `json:"id"`
+	InactivationReason   *string             `json:"inactivation_reason,omitempty"`
+	InactivationTime     *time.Time          `json:"inactivation_time,omitempty"`
+	IsActive             *bool               `json:"is_active,omitempty"`
+	IsAdmin              *bool               `json:"is_admin,omitempty"`
+	IsLocked             *bool               `json:"is_locked,omitempty"`
+	LastModificationTime *time.Time          `json:"last_modification_time,omitempty"`
+	LastModificationUser *int32              `json:"last_modification_user,omitempty"`
+	Name                 string              `json:"name"`
+	PasswordHash         string              `json:"password_hash"`
+	Phone                *string             `json:"phone,omitempty"`
+	Username             string              `json:"username"`
 }
 
-// UsersUserIdBody defines model for users_userId_body.
-type UsersUserIdBody struct {
-	Completed *bool   `json:"completed,omitempty"`
-	Task      *string `json:"task,omitempty"`
+// UserList defines model for UserList.
+type UserList struct {
+	CreateTime *time.Time          `json:"create_time,omitempty"`
+	Email      openapi_types.Email `json:"email"`
+	Id         int32               `json:"id"`
+	IsAdmin    *bool               `json:"is_admin,omitempty"`
+	IsLocked   *bool               `json:"is_locked,omitempty"`
+	Name       string              `json:"name"`
+	Username   string              `json:"username"`
+}
+
+// UserLogin defines model for UserLogin.
+type UserLogin struct {
+	PasswordHash string `json:"password_hash"`
+	Username     string `json:"username"`
 }
 
 // GetUsersParams defines parameters for GetUsers.
@@ -48,5 +86,17 @@ type GetUsersParams struct {
 // CreateUserJSONBody defines parameters for CreateUser.
 type CreateUserJSONBody = NewUser
 
+// LoginUserJSONBody defines parameters for LoginUser.
+type LoginUserJSONBody = UserLogin
+
+// SendResetPasswordJSONBody defines parameters for SendResetPassword.
+type SendResetPasswordJSONBody = string
+
 // CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
 type CreateUserJSONRequestBody = CreateUserJSONBody
+
+// LoginUserJSONRequestBody defines body for LoginUser for application/json ContentType.
+type LoginUserJSONRequestBody = LoginUserJSONBody
+
+// SendResetPasswordJSONRequestBody defines body for SendResetPassword for application/json ContentType.
+type SendResetPasswordJSONRequestBody = SendResetPasswordJSONBody
