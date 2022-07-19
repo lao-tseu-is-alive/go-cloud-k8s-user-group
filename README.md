@@ -7,7 +7,14 @@
 go-cloud-k8s-user-group is a user and group microservice written in Golang 
 that allows authentication with 2FA and sends a JWT. 
 
-This project showcases how to build a container image with nerdctl, in a secured way (scan of CVE done with Trivy) and how to deploy it on Kubernetes
+_This project showcases how to build a container image with nerdctl, in a secured way (scan of CVE done with Trivy) and how to deploy it on Kubernetes_
+
+## Dependencies
+[Echo: high performance, extensible, minimalist Go web framework](https://echo.labstack.com/)
+
+[deepmap/oapi-codegen: OpenAPI Client and Server Code Generator](https://github.com/deepmap/oapi-codegen)
+
+[pgx: PostgreSQL Driver and Toolkit](https://pkg.go.dev/github.com/jackc/pgx)
 
 
 ## Project Layout and conventions

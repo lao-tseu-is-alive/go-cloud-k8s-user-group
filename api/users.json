@@ -1,0 +1,799 @@
+{
+  "openapi": "3.0.3",
+  "info": {
+    "title": "User microservice written in Golang",
+    "description": "OpenApi Specification for an API to manage User and Group",
+    "contact": {
+      "name": "go-cloud-k8s-user-group API Team",
+      "url": "https://goeland.io",
+      "email": "go-cloud-k8s-user-group@goeland.io"
+    },
+    "license": {
+      "name": "Apache 2.0",
+      "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
+    },
+    "version": "0.1.0"
+  },
+  "servers": [
+    {
+      "url": "https://api.goeland.io/users"
+    }
+  ],
+  "paths": {
+    "/login": {
+      "get": {
+        "summary": "GetLogin allows client to do a preflight prepare for a login",
+        "description": "allows Options preflight on login user",
+        "operationId": "getLogin",
+        "responses": {
+          "200": {
+            "description": "get Options preflight on login user",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "string",
+                  "example": "you must post login credentials"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "unexpected Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "LoginUser allows client to try to authenticate, and then receive a valid JWT",
+        "description": "allows a user to login with username and password hash and send back a Json Web Token if succesfull",
+        "operationId": "loginUser",
+        "requestBody": {
+          "description": "Username and password hash to try to authenticate and receive a JWT",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UserLogin"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Json Web Token response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/JsonWebToken"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/resetpassword": {
+      "get": {
+        "summary": "GetResetPasswordEmail allows a client to do a password reset and receive a new password link to his email",
+        "description": "generates a form to allow user to enter his email, then post to confirm asking a reset",
+        "operationId": "getResetPasswordEmail",
+        "responses": {
+          "200": {
+            "description": "get form to enter user email to send a pasword reset link",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "unexpected Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "SendResetPassword will send an email with a reset password url valid for one hour",
+        "description": "allows a user to receive at given email (if present in go-users backend) a reset passwordurl, the reset is done only when clicked by receiver",
+        "operationId": "sendResetPassword",
+        "requestBody": {
+          "description": "User email to send a reset password url message",
+          "content": {
+            "application/json": {
+              "schema": {
+                "type": "string",
+                "example": "joe@example.com."
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "email send confirmation",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/resetpassword/{resetPasswordToken}": {
+      "get": {
+        "summary": "GetResetPasswordToken allows a client to do a password reset and receive a new password link to his email",
+        "description": "generates a form to allow user to enter his email, then post to confirm asking a reset",
+        "operationId": "getResetPasswordToken",
+        "parameters": [
+          {
+            "name": "resetPasswordToken",
+            "in": "path",
+            "description": "token for a password reset",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "get form to enter new pasword from the reset link (it token is still valid)",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "unexpected Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      },
+      "post": {
+        "summary": "ResetPassword will change password if resetPasswordToken in url is still valid",
+        "description": "allows a user to receive at given email (if present in go-users backend) a reset passwordurl, the reset is done only when clicked by receiver",
+        "operationId": "resetPassword",
+        "parameters": [
+          {
+            "name": "resetPasswordToken",
+            "in": "path",
+            "description": "token for a password reset",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "new password hash for this username (only if the token was still valid)",
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/UserLogin"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "200": {
+            "description": "password change confirmation",
+            "content": {
+              "text/html": {
+                "schema": {
+                  "type": "string"
+                }
+              }
+            }
+          },
+          "default": {
+            "description": "unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/users": {
+      "get": {
+        "summary": "GetUsers returns a list of users",
+        "description": "Returns the user's in an array",
+        "operationId": "getUsers",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "maximum number of results to return",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "get List of users response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/UserList"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Access token is missing or invalid"
+          },
+          "default": {
+            "description": "unexpected Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "CreateUser will create a new user",
+        "description": "Creates a new user",
+        "operationId": "createUser",
+        "requestBody": {
+          "description": "User to add",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/NewUser"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "User creation response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Access token is missing or invalid"
+          },
+          "default": {
+            "description": "unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    },
+    "/api/users/{userId}": {
+      "get": {
+        "summary": "GetUser will retrieve in backend all information about a specific userId",
+        "description": "Retrieve a specific user",
+        "operationId": "getUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "Id of the user",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "get user's successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Access token is missing or invalid"
+          },
+          "404": {
+            "description": "get user's response when userId was not found"
+          },
+          "default": {
+            "description": "unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      },
+      "put": {
+        "summary": "UpdateUser allows to modifiy information about a specific userId",
+        "description": "Updates the status of a user",
+        "operationId": "updateUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "Id of the user",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "status of the user",
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/User"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "put user's successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Access token is missing or invalid"
+          },
+          "404": {
+            "description": "put user's response when userId was not found"
+          },
+          "default": {
+            "description": "unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "DeleteUser allows to delete a specific userId",
+        "description": "delete a user",
+        "operationId": "deleteUser",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "Id of the user",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "delete user's successful no content"
+          },
+          "401": {
+            "description": "Access token is missing or invalid"
+          },
+          "404": {
+            "description": "delete user's response when userId was not found"
+          },
+          "default": {
+            "description": "unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    },
+    "/api/users/{userId}/changepassword": {
+      "put": {
+        "summary": "ChangeUserPassword allows a user to change it's own password",
+        "description": "allows a logged in user with a valid JWT to reset is own user password",
+        "operationId": "changeUserPassword",
+        "parameters": [
+          {
+            "name": "userId",
+            "in": "path",
+            "description": "Id of the user",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "new password hash for this username (it should match with userId and the JWT userId)",
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/UserLogin"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "reset user password successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/User"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Access token is missing or invalid"
+          },
+          "404": {
+            "description": "put user's response when userId was not found"
+          },
+          "default": {
+            "description": "unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    }
+  },
+  "components": {
+    "schemas": {
+      "NewUser": {
+        "required": [
+          "email",
+          "name",
+          "password_hash",
+          "username"
+        ],
+        "type": "object",
+        "properties": {
+          "name": {
+            "minLength": 2,
+            "type": "string"
+          },
+          "email": {
+            "minLength": 3,
+            "type": "string"
+          },
+          "username": {
+            "minLength": 2,
+            "type": "string"
+          },
+          "password_hash": {
+            "minLength": 32,
+            "type": "string"
+          },
+          "external_id": {
+            "type": "string"
+          },
+          "enterprise": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "is_admin": {
+            "type": "boolean"
+          },
+          "comment": {
+            "type": "string"
+          }
+        }
+      },
+      "User": {
+        "required": [
+          "email",
+          "id",
+          "name",
+          "password_hash",
+          "username"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "minLength": 2,
+            "type": "string"
+          },
+          "email": {
+            "minLength": 3,
+            "type": "string",
+            "format": "email"
+          },
+          "username": {
+            "minLength": 2,
+            "type": "string"
+          },
+          "password_hash": {
+            "minLength": 32,
+            "type": "string"
+          },
+          "external_id": {
+            "type": "string"
+          },
+          "enterprise": {
+            "type": "string"
+          },
+          "phone": {
+            "type": "string"
+          },
+          "is_locked": {
+            "type": "boolean"
+          },
+          "is_admin": {
+            "type": "boolean"
+          },
+          "create_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "creator": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "last_modification_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_modification_user": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "is_active": {
+            "type": "boolean"
+          },
+          "inactivation_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "inactivation_reason": {
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
+          },
+          "bad_password_count": {
+            "type": "integer",
+            "format": "int32"
+          }
+        }
+      },
+      "UserLogin": {
+        "required": [
+          "password_hash",
+          "username"
+        ],
+        "type": "object",
+        "properties": {
+          "username": {
+            "minLength": 2,
+            "type": "string"
+          },
+          "password_hash": {
+            "minLength": 32,
+            "type": "string"
+          }
+        }
+      },
+      "UserList": {
+        "required": [
+          "email",
+          "id",
+          "name",
+          "username"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "minLength": 2,
+            "type": "string"
+          },
+          "email": {
+            "minLength": 3,
+            "type": "string",
+            "format": "email"
+          },
+          "username": {
+            "minLength": 2,
+            "type": "string"
+          },
+          "is_locked": {
+            "type": "boolean"
+          },
+          "is_admin": {
+            "type": "boolean"
+          },
+          "create_time": {
+            "type": "string",
+            "format": "date-time"
+          }
+        }
+      },
+      "Error": {
+        "required": [
+          "code",
+          "message"
+        ],
+        "type": "object",
+        "properties": {
+          "code": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "message": {
+            "type": "string"
+          }
+        }
+      },
+      "JsonWebToken": {
+        "required": [
+          "token"
+        ],
+        "type": "object",
+        "properties": {
+          "token": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "responses": {
+      "UnauthorizedError": {
+        "description": "Access token is missing or invalid"
+      }
+    },
+    "securitySchemes": {
+      "JWTAuth": {
+        "type": "http",
+        "scheme": "bearer",
+        "bearerFormat": "JWT"
+      }
+    }
+  }
+}
