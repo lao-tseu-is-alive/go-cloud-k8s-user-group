@@ -13,6 +13,41 @@ type Service struct {
 	Store Storage
 }
 
+func (s Service) ChangeUserPassword(ctx echo.Context, userId int32) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s Service) GetLogin(ctx echo.Context) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s Service) LoginUser(ctx echo.Context) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s Service) GetResetPasswordEmail(ctx echo.Context) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s Service) SendResetPassword(ctx echo.Context) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s Service) GetResetPasswordToken(ctx echo.Context, resetPasswordToken string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
+func (s Service) ResetPassword(ctx echo.Context, resetPasswordToken string) error {
+	//TODO implement me
+	panic("implement me")
+}
+
 type ErrorService struct {
 	Err    error  `json:"err" `
 	Status int    `json:"status" `

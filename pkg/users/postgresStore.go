@@ -175,13 +175,7 @@ func (db *PGX) List(offset, limit int) ([]*User, error) {
 func (db *PGX) Get(id int32) (*User, error) {
 	db.log.Printf("info : Get(%d) entering...", id)
 	if db.Exist(id) == true {
-		res := &User{
-			Completed:   false,
-			CompletedAt: nil,
-			CreatedAt:   nil,
-			Id:          0,
-			Name:        "",
-		}
+		res := &User{}
 		err := pgxscan.Get(context.Background(), db.Db.Conn, res, usersGet, id)
 		if err != nil {
 			db.log.Printf("error : Get(%d) pgxscan.Select unexpectedly failed, error : %v", id, err)
@@ -243,33 +237,12 @@ func (db *PGX) Update(id int32, user User) (*User, error) {
 		if len(user.Name) < 6 {
 			return nil, errors.New("CreateUser name minLength is 5")
 		}
-		updateAll := true
 		var rowsAffected int = 0
 		var err error
 		now := time.Now()
-		// implements basic Business Rules !
-		// let's first check if name was already completed in DB
-		alreadyCompleted, _ := db.Db.GetQueryBool(usersCompleted, id)
-		switch user.Completed {
-		case true:
-			if alreadyCompleted == false {
-				// this name was not completed, now it is, so update CompletedAt
-				user.CompletedAt = &now
-			}
-		case false:
-			if alreadyCompleted == true {
-				// this task was completed, but user changed it to not completed so update with nil
-				user.CompletedAt = nil
-			}
-		default:
-			// in all other cases the values of Completed and CompletedAt fields should not be changed in DB
-			// so here let's update only the Name field
-			rowsAffected, err = db.Db.ExecActionQuery(usersUpdateName, user.Name, id)
-			updateAll = false
-		}
-		if updateAll {
-			rowsAffected, err = db.Db.ExecActionQuery(usersUpdate, user.Name, user.Completed, user.CompletedAt, id)
-		}
+		user.LastModificationTime = &now
+		rowsAffected, err = db.Db.ExecActionQuery(usersUpdate, user.Name, user.IsActive, user.LastModificationTime, id)
+
 		if err != nil {
 			return nil, GetErrorF("error : users could not be updated", err)
 		}
