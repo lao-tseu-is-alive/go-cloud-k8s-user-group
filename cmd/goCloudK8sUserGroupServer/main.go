@@ -23,6 +23,7 @@ const (
 )
 
 // content holds our static web server content.
+//
 //go:embed web/*
 var content embed.FS
 
@@ -87,7 +88,7 @@ func main() {
 	l.Printf("INFO: 'APP in snake: %s'", tools.ToSnakeCase(version.APP))
 	l.Printf("INFO: 'APP in kebab: %s'", tools.ToKebabCase(version.APP))
 	dbDsn, err := config.GetPgDbDsnUrlFromEnv(defaultDBIp, defaultDBPort,
-		version.APP, version.APP, defaultDBSslMode)
+		tools.ToSnakeCase(version.APP), tools.ToSnakeCase(version.APP), defaultDBSslMode)
 	if err != nil {
 		log.Fatalf("💥💥 error doing config.GetPgDbDsnUrlFromEnv. error: %v\n", err)
 	}

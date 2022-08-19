@@ -14,15 +14,37 @@ import (
 )
 
 const (
-	usersList        = "SELECT id, name, completed, created_at, completed_at FROM go_users ORDER BY id;"
-	usersGet         = "SELECT id, name, completed, created_at, completed_at FROM go_users WHERE id=$1;"
-	usersCompleted   = "SELECT completed FROM go_users WHERE id=$1"
-	usersExist       = "SELECT COUNT(*) FROM go_users WHERE id=$1"
-	usersCount       = "SELECT COUNT(*) FROM go_users"
-	usersMaxId       = "SELECT MAX(id) FROM go_users"
-	usersCreate      = "INSERT INTO go_users (name) VALUES($1) RETURNING id;"
-	usersUpdate      = "UPDATE go_users SET name=$1, completed=$2, completed_at=$3 WHERE id=$4"
-	usersUpdateName  = "UPDATE go_users SET name=$1 WHERE id=$2"
+	usersList = "SELECT id, name, email, username, create_time, is_admin, is_locked FROM go_users ORDER BY id;"
+	usersGet  = `
+SELECT id, name, email, username,
+       password_hash, external_id, enterprise, phone, is_locked, is_admin,
+       create_time, creator, last_modification_time, last_modification_user, 
+       is_active, inactivation_time, inactivation_reason, comment, bad_password_count
+FROM go_users WHERE id=$1;`
+
+	usersExist  = "SELECT COUNT(*) FROM go_users WHERE id=$1"
+	usersCount  = "SELECT COUNT(*) FROM go_users"
+	usersMaxId  = "SELECT MAX(id) FROM go_users"
+	usersCreate = "INSERT INTO go_users (name) VALUES($1) RETURNING id;"
+	usersUpdate = `
+UPDATE go_users
+SET name                   = $1,
+    email                  = $2,
+    username               = $3,
+    enterprise             = $4,
+    phone                  = $5,
+    is_locked              = $6,
+    is_admin               = $7,
+    last_modification_time = CURRENT_TIMESTAMP,
+    last_modification_user = $8,
+    is_active              = $9,
+    inactivation_time      = $10,
+    inactivation_reason    = $11,
+    comment                = $12,
+    password_hash          = $13,
+    external_id   		   = $14    
+WHERE id = $15;
+`
 	usersDelete      = "DELETE FROM go_users WHERE id = $1"
 	usersCreateTable = `
 CREATE TABLE IF NOT EXISTS go_users
@@ -34,7 +56,7 @@ CREATE TABLE IF NOT EXISTS go_users
 										constraint email_min_length	check (length(btrim(email)) > 3),
     username		text	not null	constraint go_user_unique_username unique
 										constraint username_min_length check (length(btrim(username)) > 2),
-    password_hash	text	not null 	constraint password_hash_min_length check (length(btrim(username)) > 32),
+    password_hash	text	not null 	constraint password_hash_min_length check (length(btrim(password_hash)) > 30),
 	external_id		text,
     enterprise		text,
     phone			text,
@@ -121,7 +143,7 @@ func NewPgxDB(dbConnectionString string, maxConnectionsInPool int, log *log.Logg
 		}
 		err = pgxPool.Conn.QueryRow(context.Background(), insertAdminUser, adminUser, goHash).Scan(&lastInsertId)
 		if err != nil {
-			log.Printf("ERROR: insertAdminUser adminUser:(%s) unexpectedly failed. error : %v", adminUser, err)
+			log.Printf("ERROR: insertAdminUser adminUser:(%s) hash : %s unexpectedly failed. error : %v", adminUser, goHash, err)
 			return nil, errors.New("unable to insert adminUser in table «go_user» ")
 		}
 		log.Printf("INFO: insertAdminUser adminUser:(%s) (%v) created with id : %d", adminUser, lastInsertId)
@@ -131,7 +153,7 @@ func NewPgxDB(dbConnectionString string, maxConnectionsInPool int, log *log.Logg
 	return &psql, err
 }
 
-//Create will store the new name in the store
+// Create will store the new name in the store
 func (db *PGX) Create(user NewUser) (*User, error) {
 	db.log.Printf("info : Entering Create(%#v)", user)
 	if len(user.Name) < 1 {

@@ -176,7 +176,7 @@
         ],
         "responses": {
           "200": {
-            "description": "get form to enter new pasword from the reset link (it token is still valid)",
+            "description": "get form to enter new password from the reset link (it token is still valid)",
             "content": {
               "text/html": {
                 "schema": {

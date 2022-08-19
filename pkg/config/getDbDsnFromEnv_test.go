@@ -41,7 +41,7 @@ func TestGetPgDbDsnUrlFromEnv(t *testing.T) {
 			envDbPort:     "",
 			envDbName:     "",
 			envDbUser:     "",
-			envDbPassword: "",
+			envDbPassword: "tata_pass",
 			envDbSSLMode:  "",
 			want:          "postgres://tata:tata_pass@127.0.0.1:4444/toto?sslmode=disable",
 			wantErr:       false,
@@ -142,7 +142,7 @@ func TestGetPgDbDsnUrlFromEnv(t *testing.T) {
 			os.Unsetenv("DB_PORT")
 			os.Unsetenv("DB_NAME")
 			os.Unsetenv("DB_USER")
-			os.Unsetenv("DB_PASSWORD")
+			//os.Unsetenv("DB_PASSWORD")
 			os.Unsetenv("DB_SSL_MODE")
 			if len(tt.envDbHost) > 0 {
 				err := os.Setenv("DB_HOST", tt.envDbHost)
