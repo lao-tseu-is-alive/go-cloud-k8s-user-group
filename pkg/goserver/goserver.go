@@ -17,10 +17,6 @@ import (
 
 const (
 	defaultProtocol        = "http"
-	defaultPort            = 8080
-	defaultServerIp        = ""
-	defaultServerPath      = "/"
-	defaultSecondsToSleep  = 3
 	secondsShutDownTimeout = 5 * time.Second  // maximum number of second to wait before closing server
 	defaultReadTimeout     = 10 * time.Second // max time to read request from the client
 	defaultWriteTimeout    = 10 * time.Second // max time to write response to the client
@@ -36,28 +32,6 @@ type GoHttpServer struct {
 	router        *http.ServeMux
 	startTime     time.Time
 	httpServer    http.Server
-}
-
-// WaitForHttpServer attempts to establish a TCP connection to listenAddress
-// in a given amount of time. It returns upon a successful connection;
-// otherwise exits with an error.
-func WaitForHttpServer(listenAddress string, waitDuration time.Duration, numRetries int) {
-	httpClient := http.Client{
-		Timeout: 5 * time.Second,
-	}
-	for i := 0; i < numRetries; i++ {
-		//conn, err := net.DialTimeout("tcp", listenAddress, dialTimeout)
-		resp, err := httpClient.Get(listenAddress)
-		if err != nil {
-			fmt.Printf("\n[%d] Cannot make http get %s: %v\n", i, listenAddress, err)
-			time.Sleep(waitDuration)
-			continue
-		}
-		// All seems is good
-		fmt.Printf("OK: Server responded after %d retries, with status code %d ", i, resp.StatusCode)
-		return
-	}
-	log.Fatalf("Server %s not ready up after %d attempts", listenAddress, numRetries)
 }
 
 // waitForShutdownToExit will wait for interrupt signal SIGINT or SIGTERM and gracefully shutdown the server after secondsToWait seconds.
@@ -158,7 +132,7 @@ func (s *GoHttpServer) StartServer() error {
 
 	// Starting the web server in his own goroutine
 	go func() {
-		s.logger.Printf("INFO: Starting http server listening at %s://%s/", defaultProtocol, s.listenAddress)
+		s.logger.Printf("INFO: Starting http server listening at %s://localhost%s/", defaultProtocol, s.listenAddress)
 		err := s.e.StartServer(&s.httpServer)
 		if err != nil && err != http.ErrServerClosed {
 			s.logger.Fatalf("💥💥 ERROR: 'Could not listen on %q: %s'\n", s.listenAddress, err)

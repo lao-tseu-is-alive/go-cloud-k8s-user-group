@@ -97,7 +97,7 @@ func (db *PgxDB) GetQueryString(sql string, arguments ...interface{}) (result st
 		return "", err
 	}
 	if mayBeResultIsNull == nil {
-		db.log.Printf("error : GetQueryString(%s) queryRow returned no results with sql: %v ; parameters:(%v)\n", sql, arguments)
+		db.log.Printf("error : GetQueryString() queryRow returned no results with sql: %v ; parameters:(%v)\n", sql, arguments)
 		return "", ErrNoRecordFound
 	}
 	result = *mayBeResultIsNull

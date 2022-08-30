@@ -109,7 +109,7 @@ func NewPgxDB(dbConnectionString string, maxConnectionsInPool int, log *log.Logg
 			log.Printf("ERROR: insertMetaUserService ver:(%s) unexpectedly failed. error : %v", version.VERSION, err)
 			return nil, errors.New("unable to insert metadata for the service table «go_user» ")
 		}
-		log.Printf("INFO: insertMetaUserService ver:(%s) (%v) created with id : %d", version.VERSION, lastInsertId)
+		log.Printf("INFO: insertMetaUserService ver:(%s) created with id : %d", version.VERSION, lastInsertId)
 	}
 	var numberOfUsers int
 	errUsersTable := pgxPool.Conn.QueryRow(context.Background(), usersCount).Scan(&numberOfUsers)
@@ -146,7 +146,7 @@ func NewPgxDB(dbConnectionString string, maxConnectionsInPool int, log *log.Logg
 			log.Printf("ERROR: insertAdminUser adminUser:(%s) hash : %s unexpectedly failed. error : %v", adminUser, goHash, err)
 			return nil, errors.New("unable to insert adminUser in table «go_user» ")
 		}
-		log.Printf("INFO: insertAdminUser adminUser:(%s) (%v) created with id : %d", adminUser, lastInsertId)
+		log.Printf("INFO: insertAdminUser adminUser:(%s) created with id : %d", adminUser, lastInsertId)
 	}
 	psql.Db = pgxPool
 	psql.log = log

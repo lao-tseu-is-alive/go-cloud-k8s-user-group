@@ -59,7 +59,7 @@ func (e *ErrorService) Error() string {
 }
 
 // GetMaxId returns the greatest users id used by now
-// curl -H "Content-Type: application/json" 'http://localhost:8080/users/maxid'
+// curl -H "Content-Type: application/json" 'http://localhost:8888/users/maxid'
 func (s Service) GetMaxId(ctx echo.Context) error {
 	s.Log.Println("# Entering GetMaxId()")
 	var maxUserId int32 = 0
@@ -68,6 +68,9 @@ func (s Service) GetMaxId(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, maxUserId)
 }
 
+// GetUser will retrieve the User in the store and return then
+// to test it with curl you can try :
+// curl -s -H "Content-Type: application/json" 'http://localhost:8888/api/users' |jq
 func (s Service) GetUser(ctx echo.Context, userId int32) error {
 	s.Log.Printf("# Entering GetUser(%d)", userId)
 	if s.Store.Exist(userId) == false {
@@ -84,9 +87,9 @@ func (s Service) GetUser(ctx echo.Context, userId int32) error {
 	return ctx.JSON(http.StatusOK, user)
 }
 
-//GetUsers will retrieve all Users in the store and return then
-//to test it with curl you can try :
-//curl -H "Content-Type: application/json" 'http://localhost:8080/users' |json_pp
+// GetUsers will retrieve all Users in the store and return then
+// to test it with curl you can try :
+// curl -s -H "Content-Type: application/json" 'http://localhost:8888/api/users' |jq
 func (s Service) GetUsers(ctx echo.Context, params GetUsersParams) error {
 	s.Log.Printf("# Entering GetUsers() %v", params)
 	list, err := s.Store.List(0, 100)
@@ -96,10 +99,10 @@ func (s Service) GetUsers(ctx echo.Context, params GetUsersParams) error {
 	return ctx.JSON(http.StatusOK, list)
 }
 
-//CreateUser will store the NewUser task in the store
-//to test it with curl you can try :
-//curl -XPOST -H "Content-Type: application/json" -d '{"task":"learn Linux"}'  'http://localhost:8080/users'
-//curl -XPOST -H "Content-Type: application/json" -d '{"task":""}'  'http://localhost:8080/users'
+// CreateUser will store the NewUser task in the store
+// to test it with curl you can try :
+// curl -XPOST -H "Content-Type: application/json" -d '{"task":"learn Linux"}'  'http://localhost:8888/users'
+// curl -XPOST -H "Content-Type: application/json" -d '{"task":""}'  'http://localhost:8888/users'
 func (s Service) CreateUser(ctx echo.Context) error {
 	s.Log.Println("# Entering CreateUser()")
 	newUser := &NewUser{}
@@ -123,8 +126,8 @@ func (s Service) CreateUser(ctx echo.Context) error {
 }
 
 // UpdateUser will store the modified information in the store for the given userId
-// curl -v -XPUT -H "Content-Type: application/json" -d '{"id": 3, "task":"learn Linux", "completed": true}'  'http://localhost:8080/users/3'
-// curl -v -XPUT -H "Content-Type: application/json" -d '{"id": 3, "task":"learn Linux", "completed": false}'  'http://localhost:8080/users/3'
+// curl -v -XPUT -H "Content-Type: application/json" -d '{"id": 3, "task":"learn Linux", "completed": true}'  'http://localhost:8888/users/3'
+// curl -v -XPUT -H "Content-Type: application/json" -d '{"id": 3, "task":"learn Linux", "completed": false}'  'http://localhost:8888/users/3'
 func (s Service) UpdateUser(ctx echo.Context, userId int32) error {
 	s.Log.Printf("# Entering UpdateUser(%d)", userId)
 	if s.Store.Exist(userId) == false {
@@ -155,8 +158,8 @@ func (s Service) UpdateUser(ctx echo.Context, userId int32) error {
 }
 
 // DeleteUser will remove the given userID entry from the store, and if not present will return 400 Bad Request
-//curl -v -XDELETE -H "Content-Type: application/json" 'http://localhost:8080/users/3' ->  204 No Content if present and delete it
-//curl -v -XDELETE -H "Content-Type: application/json" 'http://localhost:8080/users/93333' -> 400 Bad Request
+// curl -v -XDELETE -H "Content-Type: application/json" 'http://localhost:8888/users/3' ->  204 No Content if present and delete it
+// curl -v -XDELETE -H "Content-Type: application/json" 'http://localhost:8888/users/93333' -> 400 Bad Request
 func (s Service) DeleteUser(ctx echo.Context, userId int32) error {
 	s.Log.Printf("# Entering DeleteUser(%d)", userId)
 	if s.Store.Exist(userId) == false {
