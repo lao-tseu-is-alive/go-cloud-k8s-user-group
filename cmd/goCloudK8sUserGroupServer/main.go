@@ -29,14 +29,11 @@ func main() {
 	l := log.New(os.Stdout, fmt.Sprintf("%s ", version.APP), log.Ldate|log.Ltime|log.Lshortfile)
 	l.Printf("INFO: 'Starting %s v:%s  rev:%s  build: %s'", version.APP, version.VERSION, version.REVISION, version.BuildStamp)
 	l.Printf("INFO: 'Repository url: https://%s'", version.REPOSITORY)
-	l.Printf("INFO: 'APP in snake: %s'", tools.ToSnakeCase(version.APP))
-	l.Printf("INFO: 'APP in kebab: %s'", tools.ToKebabCase(version.APP))
 	dbDsn, err := config.GetPgDbDsnUrlFromEnv(defaultDBIp, defaultDBPort,
 		tools.ToSnakeCase(version.APP), tools.ToSnakeCase(version.APP), defaultDBSslMode)
 	if err != nil {
 		l.Fatalf("💥💥 error doing config.GetPgDbDsnUrlFromEnv. error: %v\n", err)
 	}
-	//l.Printf("INFO: 'dbDsn: %s'", dbDsn)
 	s, err := users.GetStorageInstance("postgres", dbDsn, l)
 	if err != nil {
 		l.Fatalf("💥💥 error doing users.GetStorageInstance(postgres, dbDsn  : %v\n", err)

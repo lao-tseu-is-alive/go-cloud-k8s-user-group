@@ -11,13 +11,15 @@ var (
 )
 
 func ToSnakeCase(str string) string {
-	snake := matchFirstCap.ReplaceAllString(str, "${1}_${2}")
+	res := strings.TrimSpace(str)
+	snake := matchFirstCap.ReplaceAllString(res, "${1}_${2}")
 	snake = matchAllCap.ReplaceAllString(snake, "${1}_${2}")
 	return strings.ToLower(snake)
 }
 
 func ToKebabCase(str string) string {
-	snake := matchFirstCap.ReplaceAllString(str, "${1}-${2}")
+	res := strings.TrimSpace(str)
+	snake := matchFirstCap.ReplaceAllString(res, "${1}-${2}")
 	snake = matchAllCap.ReplaceAllString(snake, "${1}-${2}")
 	return strings.ToLower(snake)
 }
