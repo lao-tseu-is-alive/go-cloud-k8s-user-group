@@ -27,7 +27,7 @@ type Storage interface {
 	// Count returns the total number of users.
 	Count() (int32, error)
 	// Create saves a new users in the storage.
-	Create(user NewUser) (*User, error)
+	Create(user User) (*User, error)
 	// Update updates the users with given ID in the storage.
 	Update(id int32, user User) (*User, error)
 	// Delete removes the users with given ID from the storage.

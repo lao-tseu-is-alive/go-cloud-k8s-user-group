@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/labstack/echo/v4"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/crypto"
 	"log"
 	"net/http"
 )
@@ -55,7 +56,7 @@ type ErrorService struct {
 }
 
 func (e *ErrorService) Error() string {
-	return fmt.Sprintf("Status[%d] %s. error: %v", e.Status, e.Msg, e.Err)
+	return fmt.Sprintf("Status[%d] %s. error: %#v", e.Status, e.Msg, e.Err)
 }
 
 // GetMaxId returns the greatest users id used by now
@@ -100,12 +101,27 @@ func (s Service) GetUsers(ctx echo.Context, params GetUsersParams) error {
 }
 
 // CreateUser will store the NewUser task in the store
-// to test it with curl you can try :
-// curl -XPOST -H "Content-Type: application/json" -d '{"task":"learn Linux"}'  'http://localhost:8888/users'
-// curl -XPOST -H "Content-Type: application/json" -d '{"task":""}'  'http://localhost:8888/users'
+/* to test it with curl you can try :
+curl -s -XPOST -H "Content-Type: application/json" \
+-d '{"username":"cgil", "name":"Carlos GIL", "email":"c@gil.town" "password_hash":"4acf0b39d9c4766709a3689f553ac01ab550545ffa4544dfc0b2cea82fba02a3"}'  'http://localhost:8888/api/users'
+*/
 func (s Service) CreateUser(ctx echo.Context) error {
 	s.Log.Println("# Entering CreateUser()")
-	newUser := &NewUser{}
+	/* uncomment when jw is implemented
+	// get the current user from JWT TOKEN
+	user := ctx.Get("user").(*jwt.Token)
+	claims := user.Claims.(*MyCustomJWTClaims)
+	// IF USER IS NOT ADMIN RETURN 401 Unauthorized
+	currentUserId := claims.ID
+	if !s.Store.IsUserAdmin(currentUserId) {
+		return echo.NewHTTPError(http.StatusUnauthorized, "current user has no admin privilege")
+	}
+	*/
+	currentUserId := 1
+	newUser := &User{
+		Id:      0,
+		Creator: int32(currentUserId),
+	}
 	if err := ctx.Bind(newUser); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("CreateUser has invalid format [%v]", err))
 	}
@@ -115,10 +131,18 @@ func (s Service) CreateUser(ctx echo.Context) error {
 	if len(newUser.Name) < 6 {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprint("CreateUser task minLength is 5"))
 	}
+	passwordHash := newUser.PasswordHash // the sha256 of the original password
+	if !crypto.ValidatePasswordHash(passwordHash) {
+		msg := fmt.Sprintf("CreateUser received invalid password hash in request body")
+		s.Log.Printf(msg)
+		return echo.NewHTTPError(http.StatusBadRequest, msg)
+	}
 	s.Log.Printf("# CreateUser() newUser : %#v\n", newUser)
 	userCreated, err := s.Store.Create(*newUser)
 	if err != nil {
-		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("problem saving new user :%v", err))
+		msg := fmt.Sprintf("CreateUser had an error saving user:%#v, err:%#v", *newUser, err)
+		s.Log.Printf(msg)
+		return echo.NewHTTPError(http.StatusBadRequest, msg)
 	}
 	s.Log.Printf("# CreateUser() User %#v\n", userCreated)
 	return ctx.JSON(http.StatusCreated, userCreated)

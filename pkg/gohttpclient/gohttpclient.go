@@ -18,7 +18,9 @@ func WaitForHttpServer(url string, waitDuration time.Duration, numRetries int) {
 		resp, err := httpClient.Get(url)
 
 		if err != nil {
-			fmt.Printf("\n[%d] Cannot make http get %s: %v\n", i, url, err)
+			if i > 0 {
+				fmt.Printf("\nWaitForHttpServer: httpClient.Get(%s) retry:[%d], %v\n", url, i, err)
+			}
 			time.Sleep(waitDuration)
 			continue
 		}

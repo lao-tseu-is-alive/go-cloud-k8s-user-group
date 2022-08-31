@@ -14,7 +14,7 @@ import (
 )
 
 const (
-	usersList = "SELECT id, name, email, username, create_time, is_admin, is_locked FROM go_users ORDER BY id;"
+	usersList = "SELECT id, name, email, username, creator, create_time, is_admin, is_locked FROM go_users ORDER BY id;"
 	usersGet  = `
 SELECT id, name, email, username,
        password_hash, external_id, enterprise, phone, is_locked, is_admin,
@@ -25,7 +25,9 @@ FROM go_users WHERE id=$1;`
 	usersExist  = "SELECT COUNT(*) FROM go_users WHERE id=$1"
 	usersCount  = "SELECT COUNT(*) FROM go_users"
 	usersMaxId  = "SELECT MAX(id) FROM go_users"
-	usersCreate = "INSERT INTO go_users (name) VALUES($1) RETURNING id;"
+	usersCreate = `INSERT INTO go_users
+    (username, name, email, password_hash, creator, comment, enterprise, external_id, is_admin, phone )
+	VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id;`
 	usersUpdate = `
 UPDATE go_users
 SET name                   = $1,
@@ -154,7 +156,7 @@ func NewPgxDB(dbConnectionString string, maxConnectionsInPool int, log *log.Logg
 }
 
 // Create will store the new name in the store
-func (db *PGX) Create(user NewUser) (*User, error) {
+func (db *PGX) Create(user User) (*User, error) {
 	db.log.Printf("info : Entering Create(%#v)", user)
 	if len(user.Name) < 1 {
 		return nil, errors.New("user name cannot be empty")
@@ -163,7 +165,13 @@ func (db *PGX) Create(user NewUser) (*User, error) {
 		return nil, errors.New("CreateUser name minLength is 5")
 	}
 	var lastInsertId int = 0
-	err := db.Db.Conn.QueryRow(context.Background(), usersCreate, user.Name).Scan(&lastInsertId)
+	isAdmin := false
+	if user.IsAdmin != nil {
+		isAdmin = *user.IsAdmin
+	}
+	err := db.Db.Conn.QueryRow(context.Background(), usersCreate,
+		user.Username, user.Name, user.Email, user.PasswordHash, user.Creator,
+		&user.Comment, &user.Enterprise, &user.ExternalId, isAdmin, &user.Phone).Scan(&lastInsertId)
 	if err != nil {
 		db.log.Printf("error : Create(%v) unexpectedly failed. error : %v", user.Name, err)
 		return nil, err

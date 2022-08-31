@@ -42,7 +42,7 @@ type User struct {
 	BadPasswordCount     *int32              `json:"bad_password_count,omitempty"`
 	Comment              *string             `json:"comment,omitempty"`
 	CreateTime           *time.Time          `json:"create_time,omitempty"`
-	Creator              *int32              `json:"creator,omitempty"`
+	Creator              int32               `json:"creator"`
 	Email                openapi_types.Email `json:"email"`
 	Enterprise           *string             `json:"enterprise,omitempty"`
 	ExternalId           *string             `json:"external_id,omitempty"`
@@ -63,6 +63,7 @@ type User struct {
 // UserList defines model for UserList.
 type UserList struct {
 	CreateTime *time.Time          `json:"create_time,omitempty"`
+	Creator    int32               `json:"creator"`
 	Email      openapi_types.Email `json:"email"`
 	Id         int32               `json:"id"`
 	IsAdmin    *bool               `json:"is_admin,omitempty"`

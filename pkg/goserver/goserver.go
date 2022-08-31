@@ -70,21 +70,26 @@ func NewGoHttpServer(listenAddress string, l *log.Logger, store users.Storage, w
 		Store: store,
 	}
 	e.HideBanner = true
+	/* will try a better way to handle 404 */
 	e.HTTPErrorHandler = func(err error, c echo.Context) {
-		log.Printf("💥💥 ERROR: 'in customHTTPErrorHandler got error: %v'\n", err)
+		l.Printf("TRACE: in customHTTPErrorHandler got error: %v\n", err)
 		code := http.StatusInternalServerError
 		if he, ok := err.(*echo.HTTPError); ok {
 			code = he.Code
 		}
 		c.Logger().Error(err)
-		errorPage := fmt.Sprintf("%s/%d.html", webRootDir, code)
-		res, err := content.ReadFile(errorPage)
-		if err != nil {
-			log.Printf("💥💥 ERROR: 'in  content.ReadFile(%s) got error: %v'\n", errorPage, err)
-		}
-		if err := c.HTMLBlob(code, res); err != nil {
-			log.Printf("💥💥 ERROR: 'in  c.HTMLBlob(%d, %s) got error: %v'\n", code, res, err)
-			c.Logger().Error(err)
+		if code == 404 {
+			errorPage := fmt.Sprintf("%s/%d.html", webRootDir, code)
+			res, err := content.ReadFile(errorPage)
+			if err != nil {
+				l.Printf("💥💥 ERROR: 'in  content.ReadFile(%s) got error: %v'\n", errorPage, err)
+			}
+			if err := c.HTMLBlob(code, res); err != nil {
+				l.Printf("💥💥 ERROR: 'in  c.HTMLBlob(%d, %s) got error: %v'\n", code, res, err)
+				c.Logger().Error(err)
+			}
+		} else {
+			c.JSON(code, err)
 		}
 	}
 	var contentHandler = echo.WrapHandler(http.FileServer(http.FS(content)))

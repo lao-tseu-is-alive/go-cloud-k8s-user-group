@@ -48,7 +48,7 @@ MAKEFLAGS += --silent
 .PHONY: run
 ## run:	will run a dev version of your Go application [DEFAULT RULE]
 run: check-env
-	go run $(LDFLAGS) cmd/$(APP_EXECUTABLE)/main.go
+	go run $(LDFLAGS) cmd/$(APP_EXECUTABLE)/${APP_EXECUTABLE}.go
 
 .PHONY: build
 ## build:	will compile your server app binary and place it in the bin sub-folder

@@ -403,6 +403,7 @@ components:
       - name
       - password_hash
       - username
+      - creator
       type: object
       properties:
         id:
@@ -473,6 +474,7 @@ components:
       - id
       - name
       - username
+      - creator
       type: object
       properties:
         id:
@@ -492,6 +494,9 @@ components:
           type: boolean
         is_admin:
           type: boolean
+        creator:
+          type: integer
+          format: int32
         create_time:
           type: string
           format: date-time

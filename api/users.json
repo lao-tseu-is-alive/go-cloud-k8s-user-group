@@ -625,7 +625,8 @@
           "id",
           "name",
           "password_hash",
-          "username"
+          "username",
+          "creator"
         ],
         "type": "object",
         "properties": {
@@ -722,7 +723,8 @@
           "email",
           "id",
           "name",
-          "username"
+          "username",
+          "creator"
         ],
         "type": "object",
         "properties": {
@@ -748,6 +750,10 @@
           },
           "is_admin": {
             "type": "boolean"
+          },
+          "creator": {
+            "type": "integer",
+            "format": "int32"
           },
           "create_time": {
             "type": "string",
