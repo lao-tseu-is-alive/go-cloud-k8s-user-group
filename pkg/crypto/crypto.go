@@ -7,25 +7,22 @@ import (
 )
 
 const (
-	emptyStringSha256 = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
-	emptyStringMd5    = "d41d8cd98f00b204e9800998ecf8427e"
+	emptyStringSha256            = "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+	emptyStringMd5               = "d41d8cd98f00b204e9800998ecf8427e"
+	testStringSha256             = "4acf0b39d9c4766709a3689f553ac01ab550545ffa4544dfc0b2cea82fba02a3"
+	testStringHashSaltFromSha256 = "$2a$04$Clft9Wh3JQqdPyjKDOk3Bu.N4vHEoeSZ8mec7P2sHpivKNx78CyZm"
 )
 
 // HashAndSalt calculates the salted hash for the given password
 func HashAndSalt(plainPwd string) (string, error) {
-	//log.Trace("HashAndSalt pwd [%v]", plainPwd))
-	// Use GenerateFromPassword to hash & salt pwd
 	// MinCost is just an integer constant provided by the bcrypt
 	// package along with DefaultCost & MaxCost.
-	// The cost can be any value you want provided it isn't lower
-	// than the MinCost (4)
+	// The cost can be any value you want provided it isn't lower than the MinCost (4)
 	bytePassword := []byte(plainPwd)
 	hash, err := bcrypt.GenerateFromPassword(bytePassword, bcrypt.MinCost)
 	if err != nil {
 		return "", fmt.Errorf("error doing bcrypt.GenerateFromPassword : %v", err)
 	}
-	// GenerateFromPassword returns a byte slice so we need to
-	// convert the bytes to a string and return it
 	return string(hash), nil
 }
 
