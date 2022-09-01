@@ -25,7 +25,7 @@ type ServerInterface interface {
 	// GetUser will retrieve in backend all information about a specific userId
 	// (GET /api/users/{userId})
 	GetUser(ctx echo.Context, userId int32) error
-	// UpdateUser allows to modifiy information about a specific userId
+	// UpdateUser allows to modify information about a specific userId
 	// (PUT /api/users/{userId})
 	UpdateUser(ctx echo.Context, userId int32) error
 	// ChangeUserPassword allows a user to change it's own password

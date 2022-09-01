@@ -30,7 +30,7 @@ type NewUser struct {
 	Email        string  `json:"email"`
 	Enterprise   *string `json:"enterprise,omitempty"`
 	ExternalId   *string `json:"external_id,omitempty"`
-	IsAdmin      *bool   `json:"is_admin,omitempty"`
+	IsAdmin      bool    `json:"is_admin"`
 	Name         string  `json:"name"`
 	PasswordHash string  `json:"password_hash"`
 	Phone        *string `json:"phone,omitempty"`
@@ -39,9 +39,9 @@ type NewUser struct {
 
 // User defines model for User.
 type User struct {
-	BadPasswordCount     *int32              `json:"bad_password_count,omitempty"`
+	BadPasswordCount     int32               `json:"bad_password_count"`
 	Comment              *string             `json:"comment,omitempty"`
-	CreateTime           *time.Time          `json:"create_time,omitempty"`
+	CreateTime           time.Time           `json:"create_time"`
 	Creator              int32               `json:"creator"`
 	Email                openapi_types.Email `json:"email"`
 	Enterprise           *string             `json:"enterprise,omitempty"`
@@ -49,9 +49,9 @@ type User struct {
 	Id                   int32               `json:"id"`
 	InactivationReason   *string             `json:"inactivation_reason,omitempty"`
 	InactivationTime     *time.Time          `json:"inactivation_time,omitempty"`
-	IsActive             *bool               `json:"is_active,omitempty"`
-	IsAdmin              *bool               `json:"is_admin,omitempty"`
-	IsLocked             *bool               `json:"is_locked,omitempty"`
+	IsActive             bool                `json:"is_active"`
+	IsAdmin              bool                `json:"is_admin"`
+	IsLocked             bool                `json:"is_locked"`
 	LastModificationTime *time.Time          `json:"last_modification_time,omitempty"`
 	LastModificationUser *int32              `json:"last_modification_user,omitempty"`
 	Name                 string              `json:"name"`

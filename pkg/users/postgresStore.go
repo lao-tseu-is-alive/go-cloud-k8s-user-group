@@ -26,8 +26,11 @@ FROM go_users WHERE id=$1;`
 	usersCount  = "SELECT COUNT(*) FROM go_users"
 	usersMaxId  = "SELECT MAX(id) FROM go_users"
 	usersCreate = `INSERT INTO go_users
-    (username, name, email, password_hash, creator, comment, enterprise, external_id, is_admin, phone )
-	VALUES($1,$2,$3,$4,$5,$6,$7,$8,$9,$10) RETURNING id;`
+(name, email, username, password_hash, external_id, enterprise, phone,
+ is_locked, is_admin, create_time, creator, is_active, comment, bad_password_count)
+VALUES ($1, $2, $3, $4, $5, $6, $7, false, $8, CURRENT_TIMESTAMP,$9,true,$10,0)
+RETURNING id;`
+
 	usersUpdate = `
 UPDATE go_users
 SET name                   = $1,
@@ -155,28 +158,32 @@ func NewPgxDB(dbConnectionString string, maxConnectionsInPool int, log *log.Logg
 	return &psql, err
 }
 
-// Create will store the new name in the store
-func (db *PGX) Create(user User) (*User, error) {
-	db.log.Printf("info : Entering Create(%#v)", user)
-	if len(user.Name) < 1 {
+// Create will store the new user in the store
+func (db *PGX) Create(u User) (*User, error) {
+	db.log.Printf("trace : entering Create(%q,%q)", u.Name, u.Username)
+	if len(u.Name) < 1 {
 		return nil, errors.New("user name cannot be empty")
 	}
-	if len(user.Name) < 6 {
+	if len(u.Name) < 6 {
 		return nil, errors.New("CreateUser name minLength is 5")
 	}
 	var lastInsertId int = 0
-	isAdmin := false
-	if user.IsAdmin != nil {
-		isAdmin = *user.IsAdmin
-	}
-	err := db.Db.Conn.QueryRow(context.Background(), usersCreate,
-		user.Username, user.Name, user.Email, user.PasswordHash, user.Creator,
-		&user.Comment, &user.Enterprise, &user.ExternalId, isAdmin, &user.Phone).Scan(&lastInsertId)
+
+	goHash, err := crypto.HashAndSalt(u.PasswordHash)
 	if err != nil {
-		db.log.Printf("error : Create(%v) unexpectedly failed. error : %v", user.Name, err)
+		db.log.Printf("error : Create(%q) had an error doing crypto.HashAndSalt. error : %v", u.Name, err)
 		return nil, err
 	}
-	db.log.Printf("info : Create(%v) created with id : %v", user.Name, lastInsertId)
+	u.PasswordHash = goHash
+
+	err = db.Db.Conn.QueryRow(context.Background(), usersCreate,
+		u.Name, u.Email, u.Username, u.PasswordHash, &u.ExternalId, &u.Enterprise, &u.Phone, //$1-$7
+		u.IsAdmin, u.Creator, &u.Comment).Scan(&lastInsertId)
+	if err != nil {
+		db.log.Printf("error : Create(%q) unexpectedly failed. error : %v", u.Name, err)
+		return nil, err
+	}
+	db.log.Printf("info : Create(%q) created with id : %v", u.Name, lastInsertId)
 
 	// if we get to here all is good, so let's retrieve a fresh copy to send it back
 	createdUser, err := db.Get(int32(lastInsertId))
@@ -186,7 +193,9 @@ func (db *PGX) Create(user User) (*User, error) {
 	return createdUser, nil
 }
 
+// List will retrieve all users in the store
 func (db *PGX) List(offset, limit int) ([]*User, error) {
+	db.log.Println("trace : entering List()")
 	var res []*User
 
 	err := pgxscan.Select(context.Background(), db.Db.Conn, &res, usersList)
@@ -203,26 +212,23 @@ func (db *PGX) List(offset, limit int) ([]*User, error) {
 }
 
 func (db *PGX) Get(id int32) (*User, error) {
-	db.log.Printf("info : Get(%d) entering...", id)
-	if db.Exist(id) == true {
-		res := &User{}
-		err := pgxscan.Get(context.Background(), db.Db.Conn, res, usersGet, id)
-		if err != nil {
-			db.log.Printf("error : Get(%d) pgxscan.Select unexpectedly failed, error : %v", id, err)
-			return nil, err
-		}
-		if res == nil {
-			db.log.Printf("info : Get(%d) returned no results ", id)
-			return nil, errors.New("records not found")
-		}
-		return res, nil
+	db.log.Printf("trace : entering Get(%d)", id)
+	res := &User{}
+	err := pgxscan.Get(context.Background(), db.Db.Conn, res, usersGet, id)
+	if err != nil {
+		db.log.Printf("error : Get(%d) pgxscan.Select unexpectedly failed, error : %v", id, err)
+		return nil, err
 	}
-	db.log.Printf("info : Get(%d) id does not exist", id)
-	return nil, errors.New("user with this id does not exist")
+	if res == nil {
+		db.log.Printf("info : Get(%d) returned no results ", id)
+		return nil, errors.New("records not found")
+	}
+	return res, nil
 }
 
 // GetMaxId returns the maximum value of users id existing in store.
 func (db *PGX) GetMaxId() (int32, error) {
+	db.log.Println("trace : entering GetMaxId()")
 	existingMaxId, err := db.Db.GetQueryInt(usersMaxId)
 	if err != nil {
 		db.log.Printf("getMaxId() could not be retrieved from DB. failed db.Query err: %v", err)
@@ -233,9 +239,10 @@ func (db *PGX) GetMaxId() (int32, error) {
 
 // Exist returns true only if a users with the specified id exists in store.
 func (db *PGX) Exist(id int32) bool {
+	db.log.Printf("trace : entering Exist(%d)", id)
 	count, err := db.Db.GetQueryInt(usersExist, id)
 	if err != nil {
-		db.log.Printf("exist(%d) could not be retrieved from DB. failed db.Query err: %v", id, err)
+		db.log.Printf("error: Exist(%d) could not be retrieved from DB. failed db.Query err: %v", id, err)
 		return false
 	}
 	if count > 0 {
@@ -249,9 +256,10 @@ func (db *PGX) Exist(id int32) bool {
 
 // Count returns the number of users stored in DB
 func (db *PGX) Count() (int32, error) {
+	db.log.Println("trace : entering Count()")
 	count, err := db.Db.GetQueryInt(usersCount)
 	if err != nil {
-		db.log.Printf("count(*) could not be retrieved from DB. failed db.Query err: %v", err)
+		db.log.Printf("error: Count() could not be retrieved from DB. failed db.Query err: %v", err)
 		return 0, err
 	}
 	return int32(count), nil
@@ -259,52 +267,45 @@ func (db *PGX) Count() (int32, error) {
 
 // Update the users stored in DB with given id and other information in struct
 func (db *PGX) Update(id int32, user User) (*User, error) {
-	if db.Exist(id) {
-		// first check business rules for name field
-		if len(user.Name) < 1 {
-			return nil, errors.New("user name cannot be empty")
-		}
-		if len(user.Name) < 6 {
-			return nil, errors.New("CreateUser name minLength is 5")
-		}
-		var rowsAffected int = 0
-		var err error
-		now := time.Now()
-		user.LastModificationTime = &now
-		rowsAffected, err = db.Db.ExecActionQuery(usersUpdate, user.Name, user.IsActive, user.LastModificationTime, id)
-
-		if err != nil {
-			return nil, GetErrorF("error : users could not be updated", err)
-		}
-		if rowsAffected < 1 {
-			return nil, GetErrorF("error : users was not updated", err)
-		}
-		// if we get to here all is good, so let's retrieve a fresh copy to send it back
-		updatedUser, err := db.Get(id)
-		if err != nil {
-			return nil, GetErrorF("error : users was updated, but can not be retrieved", err)
-		}
-		return updatedUser, nil
+	db.log.Printf("trace : entering Update(%d)", id)
+	// first check business rules for name field
+	if len(user.Name) < 1 {
+		return nil, errors.New("user name cannot be empty")
 	}
-	db.log.Printf("info : Update(%d) id does not exist", id)
-	return nil, errors.New("user with this id does not exist")
+	if len(user.Name) < 6 {
+		return nil, errors.New("CreateUser name minLength is 5")
+	}
+	var rowsAffected int = 0
+	var err error
+	now := time.Now()
+	user.LastModificationTime = &now
+	rowsAffected, err = db.Db.ExecActionQuery(usersUpdate, user.Name, user.IsActive, user.LastModificationTime, id)
+	if err != nil {
+		return nil, GetErrorF("error: Update() query failed", err)
+	}
+	if rowsAffected < 1 {
+		return nil, GetErrorF("error : Update() no row modified", err)
+	}
+	// if we get to here all is good, so let's retrieve a fresh copy to send it back
+	updatedUser, err := db.Get(id)
+	if err != nil {
+		return nil, GetErrorF("error : Update() user updated, but can not be retrieved", err)
+	}
+	return updatedUser, nil
 }
 
 // Delete the users stored in DB with given id
 func (db *PGX) Delete(id int32) error {
-	if db.Exist(id) {
-		rowsAffected, err := db.Db.ExecActionQuery(usersDelete, id)
-		if err != nil {
-			return GetErrorF("error : users could not be deleted", err)
-		}
-		if rowsAffected < 1 {
-			return GetErrorF("error : users was not deleted", err)
-		}
-		// if we get to here all is good
-		return nil
+	db.log.Printf("trace : entering Delete(%d)", id)
+	rowsAffected, err := db.Db.ExecActionQuery(usersDelete, id)
+	if err != nil {
+		return GetErrorF("error : user could not be deleted", err)
 	}
-	db.log.Printf("info : Delete(%d) id does not exist", id)
-	return errors.New("user with this id does not exist")
+	if rowsAffected < 1 {
+		return GetErrorF("error : user was not deleted", err)
+	}
+	// if we get to here all is good
+	return nil
 }
 
 func (db *PGX) Close() {

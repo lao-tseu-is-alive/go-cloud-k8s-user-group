@@ -10,7 +10,7 @@ info:
   license:
     name: Apache 2.0
     url: https://www.apache.org/licenses/LICENSE-2.0.html
-  version: 0.1.0
+  version: 0.1.1
 servers:
 - url: https://api.goeland.io/users
 paths:
@@ -257,7 +257,7 @@ paths:
       security:
       - JWTAuth: []
     put:
-      summary: UpdateUser allows to modifiy information about a specific userId
+      summary: UpdateUser allows to modify information about a specific userId
       description: Updates the status of a user
       operationId: updateUser
       parameters:
@@ -372,6 +372,7 @@ components:
       - name
       - password_hash
       - username
+      - is_admin
       type: object
       properties:
         name:
@@ -398,12 +399,17 @@ components:
           type: string
     User:
       required:
-      - email
       - id
       - name
-      - password_hash
+      - email
       - username
+      - password_hash
+      - is_locked
+      - is_admin
+      - create_time
       - creator
+      - is_active
+      - bad_password_count
       type: object
       properties:
         id:
