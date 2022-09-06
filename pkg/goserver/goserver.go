@@ -3,6 +3,8 @@ package goserver
 import (
 	"context"
 	"embed"
+	"encoding/json"
+	"errors"
 	"fmt"
 	"github.com/cristalhq/jwt/v4"
 	"github.com/labstack/echo/v4"
@@ -117,31 +119,36 @@ func NewGoHttpServer(listenAddress string, l *log.Logger, store users.Storage, w
 
 	// Restricted group
 	r := e.Group("/restricted")
-
 	// Configure middleware with the custom claims type
 	config := middleware.JWTConfig{
 		//Claims:     &users.JwtCustomClaims{},
 		ContextKey: "jwtdata",
 		SigningKey: myUsersApi.JwtSecret,
 		ParseTokenFunc: func(auth string, c echo.Context) (interface{}, error) {
-			/*keyFunc := func(t *jwt.Token) (interface{}, error) {
-				if t.Method.Alg() != "HS256" {
-					return nil, fmt.Errorf("unexpected jwt signing method=%v", t.Header["alg"])
-				}
-				return signingKey, nil
-			}*/
 			verifier, _ := jwt.NewVerifierHS(jwt.HS512, myUsersApi.JwtSecret)
 			// claims are of type `jwt.MapClaims` when token is created with `jwt.Parse`
 			token, err := jwt.Parse([]byte(auth), verifier)
 			if err != nil {
 				return nil, err
 			}
-			fmt.Printf("Algorithm %v\n", token.Header().Algorithm)
-			fmt.Printf("Type      %v\n", token.Header().Type)
-			fmt.Printf("Claims    %v\n", string(token.Claims()))
-			fmt.Printf("Payload   %v\n", string(token.PayloadPart()))
-			fmt.Printf("Token     %v\n", string(token.Bytes()))
-			return token, nil
+			// get REGISTERED claims
+			var newClaims jwt.RegisteredClaims
+			err = json.Unmarshal(token.Claims(), &newClaims)
+			if err != nil {
+				return nil, err
+			}
+			/*
+				fmt.Printf("Algorithm %v\n", token.Header().Algorithm)
+				fmt.Printf("Type      %v\n", token.Header().Type)
+				fmt.Printf("Claims    %v\n", string(token.Claims()))
+				fmt.Printf("Payload   %v\n", string(token.PayloadPart()))
+				fmt.Printf("Token     %v\n", string(token.Bytes()))
+			*/
+			if newClaims.IsValidAt(time.Now()) {
+				return token, nil
+			} else {
+				return nil, errors.New("token has expired")
+			}
 		},
 	}
 	r.Use(middleware.JWTWithConfig(config))

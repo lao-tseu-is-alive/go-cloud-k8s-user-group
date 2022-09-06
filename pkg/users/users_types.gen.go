@@ -62,12 +62,12 @@ type User struct {
 
 // UserList defines model for UserList.
 type UserList struct {
-	CreateTime *time.Time          `json:"create_time,omitempty"`
+	CreateTime time.Time           `json:"create_time"`
 	Creator    int32               `json:"creator"`
 	Email      openapi_types.Email `json:"email"`
 	Id         int32               `json:"id"`
-	IsAdmin    *bool               `json:"is_admin,omitempty"`
-	IsLocked   *bool               `json:"is_locked,omitempty"`
+	IsAdmin    bool                `json:"is_admin"`
+	IsLocked   bool                `json:"is_locked"`
 	Name       string              `json:"name"`
 	Username   string              `json:"username"`
 }

@@ -197,7 +197,7 @@ func (s Service) GetLogin(ctx echo.Context) error {
 }
 
 // LoginUser allows client to try to authenticate, and then receive a valid JWT
-// (POST /login)  curl -X POST -H "Content-Type: application/json" -d '{"username": "go-dbadmin", "password_hash": "pwdhash" }'  http://localhost:8888/login
+// curl -X POST -H "Content-Type: application/json" -d '{"username": "go-admin", "password_hash": "your_pwd_hash" }'  http://localhost:8888/login
 // with the received token you can try : curl  -H "Authorization: Bearer $token "  http://localhost:8888/restricted
 func (s Service) LoginUser(ctx echo.Context) error {
 	s.Log.Println("trace: entering LoginUser()")
