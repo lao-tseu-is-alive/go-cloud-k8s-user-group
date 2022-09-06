@@ -18,8 +18,11 @@ type Service struct {
 // JwtCustomClaims are custom claims extending default ones.
 type JwtCustomClaims struct {
 	jwt.RegisteredClaims
-	Name  string `json:"name"`
-	Admin bool   `json:"admin"`
+	Id       int32  `json:"id"`
+	Name     string `json:"name"`
+	Email    string `json:"email"`
+	Username string `json:"username"`
+	IsAdmin  bool   `json:"is_admin"`
 }
 
 // CreateUser will store the NewUser task in the store
@@ -192,16 +195,42 @@ func (s Service) GetLogin(ctx echo.Context) error {
 }
 
 // LoginUser allows client to try to authenticate, and then receive a valid JWT
-// (POST /login)  curl -X POST -d 'username=jon' -d 'password=shhh!'  http://localhost:8888/login
+// (POST /login)  curl -X POST -H "Content-Type: application/json" -d '{"username": "go-dbadmin", "password_hash": "pwdhash" }'  http://localhost:8888/login
 // with the received token you can try : curl  -H "Authorization: Bearer $token "  http://localhost:8888/restricted
 func (s Service) LoginUser(ctx echo.Context) error {
 	s.Log.Println("trace: entering LoginUser()")
-	username := ctx.FormValue("username")
-	password := ctx.FormValue("password")
 
-	// Throws unauthorized error
-	if username != "jon" || password != "shhh!" {
-		return echo.ErrUnauthorized
+	uLogin := new(UserLogin)
+	if err := ctx.Bind(uLogin); err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, "invalid user login or json format in request body")
+	}
+	idUser, err := s.Store.FindUsername(uLogin.Username)
+	if err != nil {
+		msg := fmt.Sprintf("LoginUser(%s) s.Store.FindUsername got an error: %#v ", uLogin.Username, err)
+		s.Log.Printf(msg)
+		return echo.NewHTTPError(http.StatusBadRequest, msg)
+	}
+	user, err := s.Store.Get(idUser)
+	if err != nil {
+		msg := fmt.Sprintf("LoginUser(%s) s.Store.Get(%d) got an error: %#v ", uLogin.Username, idUser, err)
+		s.Log.Printf(msg)
+		return echo.NewHTTPError(http.StatusInternalServerError, msg)
+	}
+	if !user.IsActive {
+		msg := fmt.Sprintf("LoginUser(%s) this user id (%d) is not active anymore", uLogin.Username, idUser)
+		s.Log.Printf(msg)
+		return echo.NewHTTPError(http.StatusUnauthorized, msg)
+	}
+	if user.IsLocked {
+		msg := fmt.Sprintf("LoginUser(%s) this user id (%d) is locked", uLogin.Username, idUser)
+		s.Log.Printf(msg)
+		return echo.NewHTTPError(http.StatusUnauthorized, msg)
+	}
+	if !crypto.ComparePasswords(user.PasswordHash, uLogin.PasswordHash) {
+		msg := fmt.Sprintf("LoginUser(%s) ComparePasswords failed for user id (%d). wrong password !", uLogin.Username, idUser)
+		s.Log.Printf(msg)
+		//TODO increment bad password count and if max bad passwords reached then lock this account
+		return echo.NewHTTPError(http.StatusUnauthorized, msg)
 	}
 
 	// Set custom claims
@@ -211,12 +240,15 @@ func (s Service) LoginUser(ctx echo.Context) error {
 			Audience:  nil,
 			Issuer:    "",
 			Subject:   "",
-			ExpiresAt: &jwt.NumericDate{Time: time.Now().Add(time.Hour * 72)},
+			ExpiresAt: &jwt.NumericDate{Time: time.Now().Add(time.Hour * 8)},
 			IssuedAt:  nil,
 			NotBefore: nil,
 		},
-		Name:  "Jon Snow",
-		Admin: true,
+		Id:       user.Id,
+		Name:     user.Name,
+		Email:    string(user.Email),
+		Username: user.Username,
+		IsAdmin:  user.IsAdmin,
 	}
 
 	// Create token with claims
@@ -227,7 +259,8 @@ func (s Service) LoginUser(ctx echo.Context) error {
 	if err != nil {
 		return err
 	}
-
+	msg := fmt.Sprintf("LoginUser(%s) succesfull login for user id (%d)", uLogin.Username, idUser)
+	s.Log.Printf(msg)
 	return ctx.JSON(http.StatusOK, echo.Map{
 		"token": token.String(),
 	})
@@ -273,5 +306,6 @@ func (s Service) Restricted(ctx echo.Context) error {
 		return ctx.JSON(http.StatusInternalServerError, err)
 	}
 	name := claims.Name
-	return ctx.String(http.StatusOK, fmt.Sprintf("Welcome %s (admin:%v)", name, claims.Admin))
+	idUser := claims.Id
+	return ctx.String(http.StatusOK, fmt.Sprintf("Welcome %s [%d](isAdmin:%v)", name, idUser, claims.IsAdmin))
 }

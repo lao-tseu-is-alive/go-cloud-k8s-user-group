@@ -32,6 +32,8 @@ type Storage interface {
 	Update(id int32, user User) (*User, error)
 	// Delete removes the users with given ID from the storage.
 	Delete(id int32) error
+	// FindUsername retrieves the user id for the given username or err if not found
+	FindUsername(username string) (int32, error)
 	// Close terminates properly the connection to the backend
 	Close()
 }

@@ -22,10 +22,11 @@ SELECT id, name, email, username,
        is_active, inactivation_time, inactivation_reason, comment, bad_password_count
 FROM go_users WHERE id=$1;`
 
-	usersExist  = "SELECT COUNT(*) FROM go_users WHERE id=$1"
-	usersCount  = "SELECT COUNT(*) FROM go_users"
-	usersMaxId  = "SELECT MAX(id) FROM go_users"
-	usersCreate = `INSERT INTO go_users
+	usersExist   = "SELECT COUNT(*) FROM go_users WHERE id=$1"
+	usernameFind = "SELECT id FROM go_users WHERE username=$1;"
+	usersCount   = "SELECT COUNT(*) FROM go_users"
+	usersMaxId   = "SELECT MAX(id) FROM go_users"
+	usersCreate  = `INSERT INTO go_users
 (name, email, username, password_hash, external_id, enterprise, phone,
  is_locked, is_admin, create_time, creator, is_active, comment, bad_password_count)
 VALUES ($1, $2, $3, $4, $5, $6, $7, false, $8, CURRENT_TIMESTAMP,$9,true,$10,0)
@@ -308,6 +309,17 @@ func (db *PGX) Delete(id int32) error {
 	return nil
 }
 
+// FindUsername retrieves the user id for the given username or err if not found.
+func (db *PGX) FindUsername(username string) (int32, error) {
+	db.log.Printf("trace : entering FindUsername(%s)", username)
+	idUser, err := db.Db.GetQueryInt(usernameFind, username)
+	if err != nil {
+		db.log.Printf("error: FindUsername(%s) could not be retrieved from DB. failed db.Query err: %v", username, err)
+		return 0, err
+	}
+	db.log.Printf("info : FindUsername(%s) id was found :%v", username, idUser)
+	return int32(idUser), nil
+}
 func (db *PGX) Close() {
 	db.Db.Close()
 }

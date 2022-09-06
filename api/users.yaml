@@ -481,6 +481,9 @@ components:
       - name
       - username
       - creator
+      - create_time
+      - is_admin
+      - is_locked
       type: object
       properties:
         id:
