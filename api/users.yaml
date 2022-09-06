@@ -64,7 +64,7 @@ paths:
       operationId: getResetPasswordEmail
       responses:
         "200":
-          description: get form to enter user email to send a pasword reset link
+          description: get form to enter user email to send a password reset link
           content:
             text/html:
               schema:

@@ -2,15 +2,24 @@ package users
 
 import (
 	"fmt"
+	"github.com/cristalhq/jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/crypto"
 	"log"
 	"net/http"
+	"time"
 )
 
 type Service struct {
 	Log   *log.Logger
 	Store Storage
+}
+
+// JwtCustomClaims are custom claims extending default ones.
+type JwtCustomClaims struct {
+	jwt.RegisteredClaims
+	Name  string `json:"name"`
+	Admin bool   `json:"admin"`
 }
 
 // CreateUser will store the NewUser task in the store
@@ -175,20 +184,59 @@ func (s Service) UpdateUser(ctx echo.Context, userId int32) error {
 	return ctx.JSON(http.StatusOK, updatedUser)
 }
 
-func (s Service) ChangeUserPassword(ctx echo.Context, userId int32) error {
-	s.Log.Printf("trace: entering ChangeUserPassword(%d)", userId)
-	//TODO implement me
-	panic("implement me")
-}
-
+// GetLogin allows client to do a preflight prepare for a login
+// (GET /login)
 func (s Service) GetLogin(ctx echo.Context) error {
 	s.Log.Println("trace: entering GetLogin()")
-	//TODO implement me
-	panic("implement me")
+	return ctx.JSON(http.StatusOK, "you must post login credentials")
 }
 
+// LoginUser allows client to try to authenticate, and then receive a valid JWT
+// (POST /login)  curl -X POST -d 'username=jon' -d 'password=shhh!'  http://localhost:8888/login
+// with the received token you can try : curl  -H "Authorization: Bearer $token "  http://localhost:8888/restricted
 func (s Service) LoginUser(ctx echo.Context) error {
 	s.Log.Println("trace: entering LoginUser()")
+	username := ctx.FormValue("username")
+	password := ctx.FormValue("password")
+
+	// Throws unauthorized error
+	if username != "jon" || password != "shhh!" {
+		return echo.ErrUnauthorized
+	}
+
+	// Set custom claims
+	claims := &JwtCustomClaims{
+		RegisteredClaims: jwt.RegisteredClaims{
+			ID:        "",
+			Audience:  nil,
+			Issuer:    "",
+			Subject:   "",
+			ExpiresAt: &jwt.NumericDate{Time: time.Now().Add(time.Hour * 72)},
+			IssuedAt:  nil,
+			NotBefore: nil,
+		},
+		Name:  "Jon Snow",
+		Admin: true,
+	}
+
+	// Create token with claims
+	key := []byte(`secret`)
+	signer, _ := jwt.NewSignerHS(jwt.HS256, key)
+	builder := jwt.NewBuilder(signer)
+	token, err := builder.Build(claims)
+	if err != nil {
+		return err
+	}
+
+	return ctx.JSON(http.StatusOK, echo.Map{
+		"token": token.String(),
+	})
+}
+
+// ChangeUserPassword allows a user to change it's own password
+// (PUT /api/users/{userId}/changepassword)
+func (s Service) ChangeUserPassword(ctx echo.Context, userId int32) error {
+	s.Log.Printf("trace: entering ChangeUserPassword(%d)", userId)
 	//TODO implement me
 	panic("implement me")
 }
@@ -215,4 +263,15 @@ func (s Service) ResetPassword(ctx echo.Context, resetPasswordToken string) erro
 	s.Log.Println("trace: entering ResetPassword()")
 	//TODO implement me
 	panic("implement me")
+}
+
+func (s Service) Restricted(ctx echo.Context) error {
+	u := ctx.Get("jwtdata").(*jwt.Token)
+	claims := JwtCustomClaims{}
+	err := u.DecodeClaims(&claims)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, err)
+	}
+	name := claims.Name
+	return ctx.String(http.StatusOK, fmt.Sprintf("Welcome %s (admin:%v)", name, claims.Admin))
 }

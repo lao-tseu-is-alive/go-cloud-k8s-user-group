@@ -87,6 +87,11 @@ endif
 dependencies-openapi:
 	@command -v oapi-codegen >/dev/null 2>&1 || { printf >&2 "oapi-codegen is not installed, please run: go install github.com/deepmap/oapi-codegen/cmd/oapi-codegen@latest\n"; exit 1; }
 
+.PHONY: dependencies-xo
+dependencies-xo:
+	@command -v oapi-codegen >/dev/null 2>&1 || { printf >&2 "xo is not installed, please run: go install github.com/xo/xo@latest\n"; exit 1; }
+
+
 .PHONY: check-env
 check-env:
 ifndef APP_NAME
@@ -104,8 +109,14 @@ endif
 ## openapi-codegen:	will generate helper Go code for types & server based on OpenApi spec in api/app.yml
 openapi-codegen: dependencies-openapi
 	oapi-codegen --old-config-style -generate types -o pkg/users/users_types.gen.go -package users api/users.yaml
-	oapi-codegen --old-config-style -generate server -o pkg/users/users_server.gen.go -package users api/users.yaml
+	oapi-codegen --old-config-style -templates templates_oapi-codegen -generate server -o pkg/users/users_server.gen.go -package users api/users.yaml
 
+
+.PHONY: xo-codegen
+## xo-codegen:	will generate helper Go code for database queries
+xo-codegen: dependencies-xo
+xo schema schema -s public --go-pkg=users --src templates_xo -o models ${DB_DRIVER}://${DB_USER}:=@${DB_HOST}/${DB_NAME}
+#xo schema schema -s public --go-pkg=users --src templates_xo -o pkg/users ${DB_DRIVER}://${DB_USER}:=@${DB_HOST}/${DB_NAME}
 
 .PHONY: help
 help: Makefile

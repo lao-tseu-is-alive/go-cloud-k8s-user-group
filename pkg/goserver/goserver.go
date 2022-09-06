@@ -4,6 +4,7 @@ import (
 	"context"
 	"embed"
 	"fmt"
+	"github.com/cristalhq/jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/users"
@@ -102,6 +103,42 @@ func NewGoHttpServer(listenAddress string, l *log.Logger, store users.Storage, w
 	users.RegisterHandlers(e, &myUsersApi)
 	// add another route for maxId
 	e.GET("/users/maxid", myUsersApi.GetMaxId)
+
+	// Restricted group
+	r := e.Group("/restricted")
+
+	// Configure middleware with the custom claims type
+	signingKey := []byte("secret")
+	config := middleware.JWTConfig{
+		//Claims:     &users.JwtCustomClaims{},
+		ContextKey: "jwtdata",
+		SigningKey: signingKey,
+		ParseTokenFunc: func(auth string, c echo.Context) (interface{}, error) {
+			/*keyFunc := func(t *jwt.Token) (interface{}, error) {
+				if t.Method.Alg() != "HS256" {
+					return nil, fmt.Errorf("unexpected jwt signing method=%v", t.Header["alg"])
+				}
+				return signingKey, nil
+			}*/
+			verifier, _ := jwt.NewVerifierHS(jwt.HS256, signingKey)
+			// claims are of type `jwt.MapClaims` when token is created with `jwt.Parse`
+			token, err := jwt.Parse([]byte(auth), verifier)
+			if err != nil {
+				return nil, err
+			}
+			fmt.Printf("Algorithm %v\n", token.Header().Algorithm)
+			fmt.Printf("Type      %v\n", token.Header().Type)
+			fmt.Printf("Claims    %v\n", string(token.Claims()))
+			fmt.Printf("Payload   %v\n", string(token.PayloadPart()))
+			fmt.Printf("Token     %v\n", string(token.Bytes()))
+			//if !token.Valid {
+			//	return nil, errors.New("invalid token")
+			//}
+			return token, nil
+		},
+	}
+	r.Use(middleware.JWTWithConfig(config))
+	r.GET("", myUsersApi.Restricted)
 
 	myServer := GoHttpServer{
 		listenAddress: listenAddress,
