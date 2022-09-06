@@ -11,8 +11,10 @@ import (
 )
 
 type Service struct {
-	Log   *log.Logger
-	Store Storage
+	Log         *log.Logger
+	Store       Storage
+	JwtSecret   []byte
+	JwtDuration int
 }
 
 // JwtCustomClaims are custom claims extending default ones.
@@ -240,7 +242,7 @@ func (s Service) LoginUser(ctx echo.Context) error {
 			Audience:  nil,
 			Issuer:    "",
 			Subject:   "",
-			ExpiresAt: &jwt.NumericDate{Time: time.Now().Add(time.Hour * 8)},
+			ExpiresAt: &jwt.NumericDate{Time: time.Now().Add(time.Minute * time.Duration(s.JwtDuration))},
 			IssuedAt:  nil,
 			NotBefore: nil,
 		},
@@ -252,8 +254,7 @@ func (s Service) LoginUser(ctx echo.Context) error {
 	}
 
 	// Create token with claims
-	key := []byte(`secret`)
-	signer, _ := jwt.NewSignerHS(jwt.HS256, key)
+	signer, _ := jwt.NewSignerHS(jwt.HS512, s.JwtSecret)
 	builder := jwt.NewBuilder(signer)
 	token, err := builder.Build(claims)
 	if err != nil {

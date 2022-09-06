@@ -7,6 +7,7 @@ import (
 	"github.com/cristalhq/jwt/v4"
 	"github.com/labstack/echo/v4"
 	"github.com/labstack/echo/v4/middleware"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/config"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/users"
 	"log"
 	"net/http"
@@ -66,9 +67,19 @@ func NewGoHttpServer(listenAddress string, l *log.Logger, store users.Storage, w
 	e := echo.New()
 	e.HideBanner = true
 	e.Use(middleware.CORS())
+	signingKey, err := config.GetJwtSecretFromEnv()
+	if err != nil {
+		l.Fatalf("💥💥 ERROR: 'in NewGoHttpServer config.GetJwtSecretFromEnv() got error: %v'\n", err)
+	}
+	tokenDuration, err := config.GetJwtDurationFromEnv(60)
+	if err != nil {
+		l.Fatalf("💥💥 ERROR: 'in NewGoHttpServer config.GetJwtDurationFromEnv() got error: %v'\n", err)
+	}
 	myUsersApi := users.Service{
-		Log:   l,
-		Store: store,
+		Log:         l,
+		Store:       store,
+		JwtDuration: tokenDuration,
+		JwtSecret:   []byte(signingKey),
 	}
 	e.HideBanner = true
 	/* will try a better way to handle 404 */
@@ -108,11 +119,10 @@ func NewGoHttpServer(listenAddress string, l *log.Logger, store users.Storage, w
 	r := e.Group("/restricted")
 
 	// Configure middleware with the custom claims type
-	signingKey := []byte("secret")
 	config := middleware.JWTConfig{
 		//Claims:     &users.JwtCustomClaims{},
 		ContextKey: "jwtdata",
-		SigningKey: signingKey,
+		SigningKey: myUsersApi.JwtSecret,
 		ParseTokenFunc: func(auth string, c echo.Context) (interface{}, error) {
 			/*keyFunc := func(t *jwt.Token) (interface{}, error) {
 				if t.Method.Alg() != "HS256" {
@@ -120,7 +130,7 @@ func NewGoHttpServer(listenAddress string, l *log.Logger, store users.Storage, w
 				}
 				return signingKey, nil
 			}*/
-			verifier, _ := jwt.NewVerifierHS(jwt.HS256, signingKey)
+			verifier, _ := jwt.NewVerifierHS(jwt.HS512, myUsersApi.JwtSecret)
 			// claims are of type `jwt.MapClaims` when token is created with `jwt.Parse`
 			token, err := jwt.Parse([]byte(auth), verifier)
 			if err != nil {
@@ -131,9 +141,6 @@ func NewGoHttpServer(listenAddress string, l *log.Logger, store users.Storage, w
 			fmt.Printf("Claims    %v\n", string(token.Claims()))
 			fmt.Printf("Payload   %v\n", string(token.PayloadPart()))
 			fmt.Printf("Token     %v\n", string(token.Bytes()))
-			//if !token.Valid {
-			//	return nil, errors.New("invalid token")
-			//}
 			return token, nil
 		},
 	}
