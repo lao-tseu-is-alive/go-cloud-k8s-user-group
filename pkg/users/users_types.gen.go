@@ -19,11 +19,6 @@ type Error struct {
 	Message string `json:"message"`
 }
 
-// JsonWebToken defines model for JsonWebToken.
-type JsonWebToken struct {
-	Token string `json:"token"`
-}
-
 // NewUser defines model for NewUser.
 type NewUser struct {
 	Comment      *string `json:"comment,omitempty"`
@@ -78,26 +73,14 @@ type UserLogin struct {
 	Username     string `json:"username"`
 }
 
-// GetUsersParams defines parameters for GetUsers.
-type GetUsersParams struct {
+// UsersListParams defines parameters for UsersList.
+type UsersListParams struct {
 	// maximum number of results to return
 	Limit *int32 `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// CreateUserJSONBody defines parameters for CreateUser.
-type CreateUserJSONBody = NewUser
+// UsersCreateJSONBody defines parameters for UsersCreate.
+type UsersCreateJSONBody = NewUser
 
-// LoginUserJSONBody defines parameters for LoginUser.
-type LoginUserJSONBody = UserLogin
-
-// SendResetPasswordJSONBody defines parameters for SendResetPassword.
-type SendResetPasswordJSONBody = string
-
-// CreateUserJSONRequestBody defines body for CreateUser for application/json ContentType.
-type CreateUserJSONRequestBody = CreateUserJSONBody
-
-// LoginUserJSONRequestBody defines body for LoginUser for application/json ContentType.
-type LoginUserJSONRequestBody = LoginUserJSONBody
-
-// SendResetPasswordJSONRequestBody defines body for SendResetPassword for application/json ContentType.
-type SendResetPasswordJSONRequestBody = SendResetPasswordJSONBody
+// UsersCreateJSONRequestBody defines body for UsersCreate for application/json ContentType.
+type UsersCreateJSONRequestBody = UsersCreateJSONBody

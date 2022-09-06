@@ -27,12 +27,12 @@ type JwtCustomClaims struct {
 	IsAdmin  bool   `json:"is_admin"`
 }
 
-// CreateUser will store the NewUser task in the store
+// UsersCreate will store the NewUser task in the store
 /* to test it with curl you can try :
-curl -s -XPOST -H "Content-Type: application/json" \
--d '{"username":"cgil", "name":"Carlos GIL", "email":"c@gil.town" "password_hash":"4acf0b39d9c4766709a3689f553ac01ab550545ffa4544dfc0b2cea82fba02a3"}'  'http://localhost:8888/api/users'
+curl -s -XPOST -H "Content-Type: application/json" -H "Authorization: Bearer $token" \
+-d '{"username":"cgil", "name":"Carlos GIL", "email":"c@gil.town", "password_hash":"4acf0b39d9c4766709a3689f553ac01ab550545ffa4544dfc0b2cea82fba02a3"}'  'http://localhost:8888/api/users'
 */
-func (s Service) CreateUser(ctx echo.Context) error {
+func (s Service) UsersCreate(ctx echo.Context) error {
 	s.Log.Println("trace: entering CreateUser()")
 	/* uncomment when jw is implemented
 	// get the current user from JWT TOKEN
@@ -85,10 +85,10 @@ func (s Service) GetMaxId(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, maxUserId)
 }
 
-// GetUser will retrieve the User in the store and return then
+// UsersGet will retrieve the User in the store and return then
 // to test it with curl you can try :
-// curl -s -H "Content-Type: application/json" 'http://localhost:8888/api/users' |jq
-func (s Service) GetUser(ctx echo.Context, userId int32) error {
+// curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $token" 'http://localhost:8888/api/users' |jq
+func (s Service) UsersGet(ctx echo.Context, userId int32) error {
 	s.Log.Printf("trace: entering GetUser(%d)", userId)
 	if s.Store.Exist(userId) == false {
 		msg := fmt.Sprintf("GetUser(%d) this id does not exist.", userId)
@@ -102,10 +102,10 @@ func (s Service) GetUser(ctx echo.Context, userId int32) error {
 	return ctx.JSON(http.StatusOK, user)
 }
 
-// GetUsers will retrieve all Users in the store and return then
+// UsersList will retrieve all Users in the store and return then
 // to test it with curl you can try :
-// curl -s -H "Content-Type: application/json" 'http://localhost:8888/api/users' |jq
-func (s Service) GetUsers(ctx echo.Context, params GetUsersParams) error {
+// curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $token" 'http://localhost:8888/api/users' |jq
+func (s Service) UsersList(ctx echo.Context, params UsersListParams) error {
 	s.Log.Printf("trace: entering GetUsers() params:%v", params)
 	list, err := s.Store.List(0, 100)
 	if err != nil {
@@ -114,10 +114,10 @@ func (s Service) GetUsers(ctx echo.Context, params GetUsersParams) error {
 	return ctx.JSON(http.StatusOK, list)
 }
 
-// DeleteUser will remove the given userID entry from the store, and if not present will return 400 Bad Request
-// curl -v -XDELETE -H "Content-Type: application/json" 'http://localhost:8888/api/users/3' ->  204 No Content if present and delete it
-// curl -v -XDELETE -H "Content-Type: application/json" 'http://localhost:8888/users/93333' -> 400 Bad Request
-func (s Service) DeleteUser(ctx echo.Context, userId int32) error {
+// UsersDelete will remove the given userID entry from the store, and if not present will return 400 Bad Request
+// curl -v -XDELETE -H "Content-Type: application/json" -H "Authorization: Bearer $token" 'http://localhost:8888/api/users/3' ->  204 No Content if present and delete it
+// curl -v -XDELETE -H "Content-Type: application/json"  -H "Authorization: Bearer $token" 'http://localhost:8888/users/93333' -> 400 Bad Request
+func (s Service) UsersDelete(ctx echo.Context, userId int32) error {
 	s.Log.Printf("trace: entering DeleteUser(%d)", userId)
 	/* uncomment when jw is implemented
 	// get the current user from JWT TOKEN
@@ -149,10 +149,10 @@ func (s Service) DeleteUser(ctx echo.Context, userId int32) error {
 	}
 }
 
-// UpdateUser will store the modified information in the store for the given userId
+// UsersUpdate will store the modified information in the store for the given userId
 // curl -v -XPUT -H "Content-Type: application/json" -d '{"id": 3, "task":"learn Linux", "completed": true}'  'http://localhost:8888/users/3'
 // curl -v -XPUT -H "Content-Type: application/json" -d '{"id": 3, "task":"learn Linux", "completed": false}'  'http://localhost:8888/users/3'
-func (s Service) UpdateUser(ctx echo.Context, userId int32) error {
+func (s Service) UsersUpdate(ctx echo.Context, userId int32) error {
 	s.Log.Printf("trace: entering UpdateUser(%d)", userId)
 	/* uncomment when jw is implemented
 	// get the current user from JWT TOKEN
@@ -188,6 +188,16 @@ func (s Service) UpdateUser(ctx echo.Context, userId int32) error {
 	}
 	return ctx.JSON(http.StatusOK, updatedUser)
 }
+
+// UsersChangePassword allows a user to change it's own password
+// (PUT /api/users/{userId}/changepassword)
+func (s Service) UsersChangePassword(ctx echo.Context, userId int32) error {
+	s.Log.Printf("trace: entering ChangeUserPassword(%d)", userId)
+	//TODO implement me
+	panic("implement me")
+}
+
+/////////////////////////// HANDLERS WITHOUT JWT
 
 // GetLogin allows client to do a preflight prepare for a login
 // (GET /login)
@@ -267,14 +277,6 @@ func (s Service) LoginUser(ctx echo.Context) error {
 	})
 }
 
-// ChangeUserPassword allows a user to change it's own password
-// (PUT /api/users/{userId}/changepassword)
-func (s Service) ChangeUserPassword(ctx echo.Context, userId int32) error {
-	s.Log.Printf("trace: entering ChangeUserPassword(%d)", userId)
-	//TODO implement me
-	panic("implement me")
-}
-
 func (s Service) GetResetPasswordEmail(ctx echo.Context) error {
 	s.Log.Println("trace: entering GetResetPasswordEmail()")
 	//TODO implement me
@@ -287,13 +289,13 @@ func (s Service) SendResetPassword(ctx echo.Context) error {
 	panic("implement me")
 }
 
-func (s Service) GetResetPasswordToken(ctx echo.Context, resetPasswordToken string) error {
+func (s Service) GetResetPasswordToken(ctx echo.Context) error {
 	s.Log.Println("trace: entering GetResetPasswordToken()")
 	//TODO implement me
 	panic("implement me")
 }
 
-func (s Service) ResetPassword(ctx echo.Context, resetPasswordToken string) error {
+func (s Service) ResetPassword(ctx echo.Context) error {
 	s.Log.Println("trace: entering ResetPassword()")
 	//TODO implement me
 	panic("implement me")

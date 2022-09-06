@@ -77,7 +77,7 @@ func NewGoHttpServer(listenAddress string, l *log.Logger, store users.Storage, w
 	if err != nil {
 		l.Fatalf("💥💥 ERROR: 'in NewGoHttpServer config.GetJwtDurationFromEnv() got error: %v'\n", err)
 	}
-	myUsersApi := users.Service{
+	usersService := users.Service{
 		Log:         l,
 		Store:       store,
 		JwtDuration: tokenDuration,
@@ -112,20 +112,16 @@ func NewGoHttpServer(listenAddress string, l *log.Logger, store users.Storage, w
 	var contentRewrite = middleware.Rewrite(map[string]string{"/*": "/web/$1"})
 	//TODO  find a correct way to handle 404 in next handler, for now  is not used if we get /toto (only if method is not get)
 	e.GET("/*", contentHandler, contentRewrite)
-	// here the routes defined in OpenApi users.yaml are registered
-	users.RegisterHandlers(e, &myUsersApi)
-	// add another route for maxId
-	e.GET("/users/maxid", myUsersApi.GetMaxId)
 
 	// Restricted group
-	r := e.Group("/restricted")
+	r := e.Group("/api")
 	// Configure middleware with the custom claims type
 	config := middleware.JWTConfig{
 		//Claims:     &users.JwtCustomClaims{},
 		ContextKey: "jwtdata",
-		SigningKey: myUsersApi.JwtSecret,
+		SigningKey: usersService.JwtSecret,
 		ParseTokenFunc: func(auth string, c echo.Context) (interface{}, error) {
-			verifier, _ := jwt.NewVerifierHS(jwt.HS512, myUsersApi.JwtSecret)
+			verifier, _ := jwt.NewVerifierHS(jwt.HS512, usersService.JwtSecret)
 			// claims are of type `jwt.MapClaims` when token is created with `jwt.Parse`
 			token, err := jwt.Parse([]byte(auth), verifier)
 			if err != nil {
@@ -152,7 +148,9 @@ func NewGoHttpServer(listenAddress string, l *log.Logger, store users.Storage, w
 		},
 	}
 	r.Use(middleware.JWTWithConfig(config))
-	r.GET("", myUsersApi.Restricted)
+	r.GET("restricted", usersService.Restricted)
+	// here the routes defined in OpenApi users.yaml are registered
+	users.RegisterHandlers(r, &usersService)
 
 	myServer := GoHttpServer{
 		listenAddress: listenAddress,
@@ -169,18 +167,24 @@ func NewGoHttpServer(listenAddress string, l *log.Logger, store users.Storage, w
 			IdleTimeout:  defaultIdleTimeout,  // max time for connections using TCP Keep-Alive
 		},
 	}
-	//myServer.routes()
+	myServer.routes("", usersService)
 
 	return &myServer
 }
 
 // (*GoHttpServer) routes initializes all the handlers paths of this web server, it is called inside the NewGoHttpServer constructor
-func (s *GoHttpServer) routes() {
+func (s *GoHttpServer) routes(baseURL string, usersService users.Service) {
 	// s.router.Handle("/", s.getMyDefaultHandler())
 	// s.e.GET("/readiness", s.getReadinessHandler())
 	// s.e.GET("/health", s.getHealthHandler())
-
-	//s.router.Handle("/hello", s.getHelloHandler())
+	// the next route is not restricted with jwt token
+	s.e.GET(baseURL+"/users/maxid", usersService.GetMaxId)
+	s.e.GET(baseURL+"/login", usersService.GetLogin)
+	s.e.POST(baseURL+"/login", usersService.LoginUser)
+	s.e.GET(baseURL+"/resetpassword", usersService.GetResetPasswordEmail)
+	s.e.POST(baseURL+"/resetpassword", usersService.SendResetPassword)
+	s.e.GET(baseURL+"/resetpassword/:resetPasswordToken", usersService.GetResetPasswordToken)
+	s.e.POST(baseURL+"/resetpassword/:resetPasswordToken", usersService.ResetPassword)
 }
 
 // StartServer initializes all the handlers paths of this web server, it is called inside the NewGoHttpServer constructor
