@@ -16,6 +16,8 @@ _This project showcases how to build a container image with nerdctl, in a secure
 
 [pgx: PostgreSQL Driver and Toolkit](https://pkg.go.dev/github.com/jackc/pgx)
 
+[Json Web Token for Go (RFC 7519)](https://github.com/cristalhq/jwt)
+
 
 ## Project Layout and conventions
 This project uses the Standard Go Project Layout : https://github.com/golang-standards/project-layout

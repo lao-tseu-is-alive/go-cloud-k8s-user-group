@@ -21,3 +21,8 @@ MakefileTest
 /goCloudK8sUserGroup.conf_local
 
 .idea
+/templates_xo/
+/models/
+/templates_oapi-codegen/
+
+.vscode

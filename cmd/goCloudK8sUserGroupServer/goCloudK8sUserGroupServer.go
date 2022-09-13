@@ -17,12 +17,12 @@ const (
 	defaultDBPort     = 5432
 	defaultDBIp       = "127.0.0.1"
 	defaultDBSslMode  = "prefer"
-	defaultWebRootDir = "web"
+	defaultWebRootDir = "goCloudK8sUserGroupFront/dist/"
 )
 
 // content holds our static web server content.
 //
-//go:embed web/*
+//go:embed goCloudK8sUserGroupFront/dist/*
 var content embed.FS
 
 func main() {

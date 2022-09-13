@@ -1,0 +1,74 @@
+  544  curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/install | sh
+  560  curl --proto '=https' --tlsv1.2 -sSfL https://run.linkerd.io/emojivoto.yml   | kubectl apply -f -
+  751  man curl
+ 1140  curl -k -H "Content-Type: application/json" -X PUT --data-binary @tmp.json http://127.0.0.1:8080/api/v1/namespaces/emojivoto/finalize
+ 1144  curl -k -H "Content-Type: application/json" -X PUT --data-binary @tmp.json http://127.0.0.1:8080/api/v1/namespaces/linkerd-viz/finalize
+ 1147  curl -k -H "Content-Type: application/json" -X PUT --data-binary @tmp.json http://127.0.0.1:8080/api/v1/namespaces/linkerd/finalize
+ 1153  curl -k -H "Content-Type: application/json" -X PUT --data-binary @tmp.json http://127.0.0.1:8080/api/v1/namespaces/linkerd/finalize
+ 1158  curl -k -H "Content-Type: application/json" -X PUT --data-binary @tmp.json http://127.0.0.1:8080/api/v1/namespaces/test-go-cloud-k8s-info/finalize
+ 1164  curl -k -H "Content-Type: application/json" -X PUT --data-binary @tmp.json http://127.0.0.1:8080/api/v1/namespaces/test-go-cloud-k8s-shell/finalize
+ 1355  curl -H "Content-Type: application/json" 'http://localhost:8888/users/maxid'
+ 1356  curl -H "Content-Type: application/json" 'http://localhost:8888/users'
+ 1357  curl -H "Content-Type: application/json" 'http://localhost:8888/api/users'
+ 1358  curl -H "Content-Type: application/json" 'http://localhost:8888/api/users' |jq
+ 1359  curl -s -H "Content-Type: application/json" 'http://localhost:8888/api/users' |jq
+ 1360  curl -s -H "Content-Type: application/json" 'http://localhost:8888/api/users/1' |jq
+ 1406  curl -X POST-H "Content-Type: application/json" -d 'username=jon' -d 'password=shhh!'  http://localhost:8888/login
+ 1407  curl -X POST -H "Content-Type: application/json" -d 'username=jon' -d 'password=shhh!'  http://localhost:8888/login
+ 1408  curl -X POST  -d 'username=jon' -d 'password=shhh!'  http://localhost:8888/login
+ 1409  curl -X POST  -d 'username=jon' -d 'password=àshhh!'  http://localhost:8888/login
+ 1410  curl -X POST  -d 'username=jon' -d 'password=shhh!'  http://localhost:8888/login
+ 1411  curl  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NjI3MDkwMTgsIm5hbWUiOiJKb24gU25vdyIsImFkbWluIjp0cnVlfQ.zFi2PPoV5wqDGOR8fGOdRS0wykdXPb-8wZXbt6lcwK8" http://localhost:8888/restricted
+ 1412  curl -X POST  -d 'username=jon' -d 'password=shhh!'  http://localhost:8888/login
+ 1414  curl  -H "Authorization: Bearer $token" http://localhost:8888/restricted
+ 1415  curl  -H "Authorization: Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJleHAiOjE2NjI3MDkwMTgsIm5hbWUiOiJKb24gU25vdyIsImFkbWluIjp0cnVlfQ.zFi2PPoV5wqDGOR8fGOdRS0wykdXPb-8wZXbt6lcw8" http://localhost:8888/restricted
+ 1416  curl -X POST  -d 'username=jon' -d 'password=shhh!'  http://localhost:8888/login
+ 1418  curl  -H "Authorization: Bearer $token" http://localhost:8888/restricted
+ 1419  curl -X POST  -d 'username=jon' -d 'password=shhh!'  http://localhost:8888/login
+ 1420  curl -X POST -H "Content-Type: application/json" -d '{"username": "go-dbadmin", "password_hash": "pwdhash" }'  http://localhost:8888/login
+ 1421  curl -X POST -H "Content-Type: application/json" -d '{"username": "go-admin", "password_hash": "pwdhash" }'  http://localhost:8888/login
+ 1424  curl -X POST -H "Content-Type: application/json" -d '{"username": "go-admin", "password_hash": "b80c2dbcc2ad9e1c28923b659d04a226a4f77b1085328947518771dc4eacf729" }'  http://localhost:8888/login
+ 1426  curl  -H "Authorization: Bearer $token" http://localhost:8888/restricted
+ 1427  curl -X POST -H "Content-Type: application/json" -d '{"username": "go-admin", "password_hash": "b80c2dbcc2ad9e1c28923b659d04a226a4f77b1085328947518771dc4eacf729" }'  http://localhost:8888/login
+ 1429  curl  -H "Authorization: Bearer $token" http://localhost:8888/restricted
+ 1431  curl  -H "Authorization: Bearer $token" http://localhost:8888/restricted
+ 1433  curl  -H "Authorization: Bearer $token" http://localhost:8888/restricted
+ 1434  curl -X POST -H "Content-Type: application/json" -d '{"username": "go-admin", "password_hash": "b80c2dbcc2ad9e1c28923b659d04a226a4f77b1085328947518771dc4eacf729" }'  http://localhost:8888/login
+ 1436  curl  -H "Authorization: Bearer $token" http://localhost:8888/restricted
+ 1439  curl -X POST -H "Content-Type: application/json" -d '{"username": "go-admin", "password_hash": "b80c2dbcc2ad9e1c28923b659d04a226a4f77b1085328947518771dc4eacf729" }'  http://localhost:8888/login
+ 1441  curl  -H "Authorization: Bearer $token" http://localhost:8888/restricted
+ 1442  curl -X POST -H "Content-Type: application/json" -d '{"username": "go-admin", "password_hash": "b80c2dbcc2ad9e1c28923b659d04a226a4f77b1085328947518771dc4eacf729" }'  http://localhost:8888/login
+ 1444  curl  -H "Authorization: Bearer $token" http://localhost:8888/restricted
+ 1446  curl -X POST -H "Content-Type: application/json" -d '{"username": "go-admin", "password_hash": "b80c2dbcc2ad9e1c28923b659d04a226a4f77b1085328947518771dc4eacf729" }'  http://localhost:8888/login
+ 1448  curl  -H "Authorization: Bearer $token" http://localhost:8888/restricted
+ 1449  curl -X POST -H "Content-Type: application/json" -d '{"username": "go-admin", "password_hash": "b80c2dbcc2ad9e1c28923b659d04a226a4f77b1085328947518771dc4eacf729" }'  http://localhost:8888/login
+ 1451  curl -X POST -H "Content-Type: application/json" -d '{"username": "go-admin", "password_hash": "b80c2dbcc2ad9e1c28923b659d04a226a4f77b1085328947518771dc4eacf729" }'  http://localhost:8888/login
+ 1452  curl  -H "Authorization: Bearer $token" http://localhost:8888/restricted
+ 1453  curl  -H "Authorization: Bearer $token" http://localhost:8888/users
+ 1454  curl  -H "Authorization: Bearer $token" http://localhost:8888/api/users
+ 1455  curl  -H "Authorization: Bearer $token" http://localhost:8888/api/users|jq
+ 1456  curl  -H "Authorization: Bearer $token" http://localhost:8888/restricted
+ 1459  curl -X POST -H "Content-Type: application/json" -d '{"username": "go-admin", "password_hash": "b80c2dbcc2ad9e1c28923b659d04a226a4f77b1085328947518771dc4eacf729" }'  http://localhost:8888/login
+ 1461  curl  -H "Authorization: Bearer $token" http://localhost:8888/restricted
+ 1463  curl  -H "Authorization: Bearer $token" http://localhost:8888/restricted
+ 1464  curl  -H "Authorization: Bearer $token" http://localhost:8888/api/restricted
+ 1465  curl -X POST -H "Content-Type: application/json" -d '{"username": "go-admin", "password_hash": "b80c2dbcc2ad9e1c28923b659d04a226a4f77b1085328947518771dc4eacf729" }'  http://localhost:8888/login
+ 1467  curl  -H "Authorization: Bearer $token" http://localhost:8888/api/restricted
+ 1468  curl  -H "Authorization: Bearer $token" http://localhost:8888/api
+ 1469  curl  -H "Authorization: Bearer $token" http://localhost:8888/api/users
+ 1470  curl  http://localhost:8888/api/users
+ 1471  curl  -H "Authorization: Bearer $token" http://localhost:8888/api/users
+ 1472  curl  -H "Authorization: Bearer $token" http://localhost:8888/api/users/1
+ 1473  curl  http://localhost:8888/api/users/maxid
+ 1474  curl  http://localhost:8888/users/maxid
+ 1475  curl  -H "Authorization: Bearer $token" http://localhost:8888/api/users/12
+ 1476  curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $token" 'http://localhost:8888/api/users' |jq
+ 1477  curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $token" 'http://localhost:8888/api/users/1' |jq
+ 1478  curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $token" 'http://localhost:8888/api/users/12' |jq
+ 1479  curl -v -XDELETE -H "Content-Type: application/json" -H "Authorization: Bearer $token" 'http://localhost:8888/api/users/12'
+ 1480  curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $token" 'http://localhost:8888/api/users/12' |jq
+ 1481  curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $token" 'http://localhost:8888/api/users' |jq
+ 1482  curl -s -XPOST -H "Content-Type: application/json" -H "Authorization: Bearer $token" -d '{"username":"cgil", "name":"Carlos GIL", "email":"c@gil.town" "password_hash":"4acf0b39d9c4766709a3689f553ac01ab550545ffa4544dfc0b2cea82fba02a3"}'  'http://localhost:8888/api/users'
+ 1483  curl -s -XPOST -H "Content-Type: application/json" -H "Authorization: Bearer $token" -d '{"username":"cgil", "name":"Carlos GIL", "email":"c@gil.town", "password_hash":"4acf0b39d9c4766709a3689f553ac01ab550545ffa4544dfc0b2cea82fba02a3"}'  'http://localhost:8888/api/users'
+ 1484  history |grep curl
+ 1485  history |grep curl>curl_tests.txt
