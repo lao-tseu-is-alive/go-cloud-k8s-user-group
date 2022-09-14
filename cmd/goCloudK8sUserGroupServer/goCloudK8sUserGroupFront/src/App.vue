@@ -14,7 +14,17 @@
   <main>
     <div class="flex">
       <div class="col-12">
-        <LoginUser :msg="`Authentification ${APP_TITLE}:`" />
+        <template v-if="isUserAuthenticated">
+          <h2>Connexion de {{ getUserName() }} [{{ getUserEmail() }}]</h2>
+        </template>
+        <template v-else>
+          <LoginUser
+            :msg="`Authentification ${APP_TITLE}:`"
+            :backend="BACKEND_URL"
+            @loginOK="connected"
+            @loginError="failedConnect"
+          />
+        </template>
       </div>
     </div>
   </main>
@@ -23,13 +33,23 @@
 <script setup>
 import Toolbar from 'primevue/toolbar';
 import Button from 'primevue/button';
-import { onMounted } from 'vue';
+import { onMounted, ref } from 'vue';
 import LoginUser from './components/LoginUser.vue';
+import { getUserName, getUserEmail } from './components/Login';
 import {
-  APP, APP_TITLE, BUILD_DATE, VERSION, getLog,
+  APP, APP_TITLE, BACKEND_URL, BUILD_DATE, VERSION, getLog,
 } from './config';
 
 const log = getLog(APP, 4, 2);
+const isUserAuthenticated = ref(false);
+const connected = (v) => {
+  log.t(' connected()', v);
+  isUserAuthenticated.value = true;
+};
+
+const failedConnect = (v) => {
+  log.w('FailedConnect()', v);
+};
 
 onMounted(() => {
   log.t(' mounted()');

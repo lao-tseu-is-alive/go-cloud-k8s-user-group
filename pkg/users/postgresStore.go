@@ -5,6 +5,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/georgysavva/scany/pgxscan"
+	"github.com/jackc/pgx/v4"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/config"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/crypto"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/database"
@@ -12,6 +13,8 @@ import (
 	"log"
 	"time"
 )
+
+var ErrUsernameNotFound = errors.New("username does not exist")
 
 const (
 	usersList = "SELECT id, name, email, username, creator, create_time, is_admin, is_locked FROM go_users ORDER BY id;"
@@ -314,6 +317,10 @@ func (db *PGX) FindUsername(username string) (int32, error) {
 	db.log.Printf("trace : entering FindUsername(%s)", username)
 	idUser, err := db.Db.GetQueryInt(usernameFind, username)
 	if err != nil {
+		if err == pgx.ErrNoRows {
+			db.log.Printf("warning: FindUsername(%s) did not find any rows with this username", username)
+			return 0, ErrUsernameNotFound
+		}
 		db.log.Printf("error: FindUsername(%s) could not be retrieved from DB. failed db.Query err: %v", username, err)
 		return 0, err
 	}

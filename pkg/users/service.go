@@ -218,8 +218,13 @@ func (s Service) LoginUser(ctx echo.Context) error {
 	}
 	idUser, err := s.Store.FindUsername(uLogin.Username)
 	if err != nil {
+		if err == ErrUsernameNotFound {
+			s.Log.Printf("LoginUser(%s) username was not found in DB.", uLogin.Username)
+			return ctx.JSON(http.StatusUnauthorized, "username not found")
+		}
 		msg := fmt.Sprintf("LoginUser(%s) s.Store.FindUsername got an error: %#v ", uLogin.Username, err)
 		s.Log.Printf(msg)
+		ctx.JSON(http.StatusNotFound, msg)
 		return echo.NewHTTPError(http.StatusBadRequest, msg)
 	}
 	user, err := s.Store.Get(idUser)

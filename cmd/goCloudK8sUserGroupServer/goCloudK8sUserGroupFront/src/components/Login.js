@@ -1,7 +1,7 @@
 import sha256 from 'crypto-js/sha256';
 import axios from 'axios';
-import { isNullOrUndefined } from 'cgil-html-utils';
-import { getLog, APP, DEFAULT_BASE_SERVER_URL } from '../config';
+import { isNullOrUndefined } from '../tools/utils';
+import { getLog, APP, BACKEND_URL } from '../config';
 
 const log = getLog('Login', 2, 1);
 
@@ -15,10 +15,10 @@ export const parseJwt = (token) => {
   return JSON.parse(jsonPayload);
 };
 
-export const getToken = async (baseServerUrl, username = 'ANONYME', passwordHash) => {
+export const getToken = async (baseServerUrl, username, passwordHash) => {
   const data = {
     username,
-    password: `${passwordHash}`,
+    password_hash: `${passwordHash}`,
   };
   log.t('# IN getToken() data:', data);
   let response = null;
@@ -53,7 +53,7 @@ export const getToken = async (baseServerUrl, username = 'ANONYME', passwordHash
   }
 };
 
-export const getTokenStatus = async (baseServerUrl = DEFAULT_BASE_SERVER_URL) => {
+export const getTokenStatus = async (baseServerUrl = BACKEND_URL) => {
   log.t('# IN getTokenStatus() ');
   axios.defaults.headers.common.Authorization = `Bearer ${sessionStorage.getItem(`${APP}_goapi_jwt_session_token`)}`;
   try {
@@ -130,7 +130,6 @@ export const getUserEmail = () => {
   return '';
 };
 
-
 export const getUserId = () => {
   if (doesCurrentSessionExist()) {
     return parseInt(`${sessionStorage.getItem(`${APP}_goapi_idgouser`)}`, 10);
@@ -197,7 +196,6 @@ export const isUserHavingGroups = () => {
   }
   return false;
 };
-
 
 // must include next line in index.thml header :
 // <script src="https://golux.lausanne.ch/info.php"></script>
