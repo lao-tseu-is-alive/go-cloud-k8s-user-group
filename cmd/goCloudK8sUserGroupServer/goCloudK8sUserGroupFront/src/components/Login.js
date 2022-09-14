@@ -1,0 +1,240 @@
+import sha256 from 'crypto-js/sha256';
+import axios from 'axios';
+import { isNullOrUndefined } from 'cgil-html-utils';
+import { getLog, APP, DEFAULT_BASE_SERVER_URL } from '../config';
+
+const log = getLog('Login', 2, 1);
+
+export const getPasswordHash = (password) => sha256(password);
+
+export const parseJwt = (token) => {
+  const base64Url = token.split('.')[1];
+  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+  const jsonPayload = decodeURIComponent(atob(base64).split('').map((c) => `%${(`00${c.charCodeAt(0).toString(16)}`).slice(-2)}`).join(''));
+
+  return JSON.parse(jsonPayload);
+};
+
+export const getToken = async (baseServerUrl, username = 'ANONYME', passwordHash) => {
+  const data = {
+    username,
+    password: `${passwordHash}`,
+  };
+  log.t('# IN getToken() data:', data);
+  let response = null;
+  try {
+    response = await axios.post(`${baseServerUrl}/login`, data); // .then((response) => {
+    log.l('getToken() axios.post Success ! response :', response.data);
+    const jwtValues = parseJwt(response.data.token);
+    log.l('getToken() token values : ', jwtValues);
+    const dExpires = new Date(0);
+    dExpires.setUTCSeconds(jwtValues.exp);
+    log.l(`getToken() JWT token expiration : ${dExpires}`);
+    if (response.status === 200) {
+      if (typeof Storage !== 'undefined') {
+        // Code for localStorage/sessionStorage.
+        sessionStorage.setItem(`${APP}_goapi_jwt_session_token`, response.data.token);
+        sessionStorage.setItem(`${APP}_goapi_idgouser`, jwtValues.id);
+        sessionStorage.setItem(`${APP}_goapi_name`, jwtValues.name);
+        sessionStorage.setItem(`${APP}_goapi_username`, username);
+        sessionStorage.setItem(`${APP}_goapi_email`, jwtValues.email);
+        sessionStorage.setItem(`${APP}_goapi_isadmin`, jwtValues.admin);
+        sessionStorage.setItem(`${APP}_goapi_groups`, jwtValues.limited_groups);
+        sessionStorage.setItem(`${APP}_goapi_date_expiration`, jwtValues.exp);
+      }
+      return response.data;
+    }
+    log.w('axios get a bad status ! response was:', response);
+    return response;
+  } catch (e) {
+    log.e('getToken() ## Try Catch ERROR ## error :', e);
+    log.e('axios response was:', e.response);
+    return e;
+  }
+};
+
+export const getTokenStatus = async (baseServerUrl = DEFAULT_BASE_SERVER_URL) => {
+  log.t('# IN getTokenStatus() ');
+  axios.defaults.headers.common.Authorization = `Bearer ${sessionStorage.getItem(`${APP}_goapi_jwt_session_token`)}`;
+  try {
+    const res = await axios.get(`${baseServerUrl}/api/status`);
+    log.l('getTokenStatus() axios.get Success ! response :', res);
+    const dExpires = new Date(0);
+    dExpires.setUTCSeconds(res.data.exp);
+    log.w(`getTokenStatus() JWT token expiration : ${dExpires}`);
+    return res.data;
+  } catch (error) {
+    const msg = `Error: in getTokenStatus() ## axios.get(${baseServerUrl}/api/status) ERROR ## error :${error}`;
+    log.w(msg);
+    return msg;
+  }
+};
+
+export const clearSessionStorage = () => {
+  // Code for localStorage/sessionStorage.
+  sessionStorage.removeItem(`${APP}_goapi_jwt_session_token`);
+  sessionStorage.removeItem(`${APP}_goapi_idgouser`);
+  sessionStorage.removeItem(`${APP}_goapi_name`);
+  sessionStorage.removeItem(`${APP}_goapi_username`);
+  sessionStorage.removeItem(`${APP}_goapi_email`);
+  sessionStorage.removeItem(`${APP}_goapi_isadmin`);
+  sessionStorage.removeItem(`${APP}_goapi_groups`);
+  sessionStorage.removeItem(`${APP}_goapi_date_expiration`);
+};
+
+export const logoutAndResetToken = (baseServerUrl) => {
+  log.t('# IN logoutAndResetToken()');
+  axios.defaults.headers.common.Authorization = `Bearer ${sessionStorage.getItem(`${APP}_goapi_jwt_session_token`)}`;
+  axios.get(`${baseServerUrl}/api/logout`)
+    .then((response) => {
+      log.l('logoutAndResetToken() axios.get Success ! response :', response);
+      clearSessionStorage();
+    })
+    .catch((error) => {
+      log.e('logoutAndResetToken() ## axios.get ERROR ## error :', error);
+    });
+};
+
+export const doesCurrentSessionExist = () => {
+  log.t('# IN doesCurrentSessionExist() ');
+  if (sessionStorage.getItem(`${APP}_goapi_jwt_session_token`) == null) return false;
+  if (sessionStorage.getItem(`${APP}_goapi_idgouser`) == null) return false;
+  if (sessionStorage.getItem(`${APP}_goapi_isadmin`) == null) return false;
+  if (sessionStorage.getItem(`${APP}_goapi_email`) == null) return false;
+  if (sessionStorage.getItem(`${APP}_goapi_date_expiration`) !== null) {
+    const dateExpire = new Date(sessionStorage.getItem(`${APP}_goapi_date_expiration`));
+    const now = new Date();
+    if (now > dateExpire) {
+      clearSessionStorage();
+      log.w('# IN doesCurrentSessionExist() SESSION EXPIRED');
+      return false;
+    }
+    // attention qu'une session existe en local veut pas dire que le jwt token est encore valide !
+    return true;
+  }
+  log.w('# IN doesCurrentSessionExist() goapi_date_expiration was null ');
+  return false;
+};
+
+export const getLocalJwtTokenAuth = () => {
+  if (doesCurrentSessionExist()) {
+    return `Bearer ${sessionStorage.getItem(`${APP}_goapi_jwt_session_token`)}`;
+  }
+  return '';
+};
+
+export const getUserEmail = () => {
+  if (doesCurrentSessionExist()) {
+    return `${sessionStorage.getItem(`${APP}_goapi_email`)}`;
+  }
+  return '';
+};
+
+
+export const getUserId = () => {
+  if (doesCurrentSessionExist()) {
+    return parseInt(`${sessionStorage.getItem(`${APP}_goapi_idgouser`)}`, 10);
+  }
+  return 0;
+};
+
+export const getUserName = () => {
+  if (doesCurrentSessionExist()) {
+    return `${sessionStorage.getItem(`${APP}_goapi_name`)}`;
+  }
+  return '';
+};
+
+export const getUserIsAdmin = () => {
+  if (doesCurrentSessionExist()) {
+    return (sessionStorage.getItem(`${APP}_goapi_isadmin`) === 'true');
+  }
+  return false;
+};
+
+export const getUserFirstGroups = () => {
+  if (doesCurrentSessionExist()) {
+    if (sessionStorage.getItem(`${APP}_goapi_groups`) == null) return null;
+    if (sessionStorage.getItem(`${APP}_goapi_groups`) === 'null') return null;
+    // let's clone it and converting to an array of integers
+    const tmpArr = sessionStorage.getItem(`${APP}_goapi_groups`);
+    if (tmpArr.indexOf(',') > 0) {
+      const firstFiltered = tmpArr.split(',').map((e) => +e);
+      return firstFiltered[0];
+    }
+    return parseInt(tmpArr, 10);
+  }
+  return null;
+};
+
+export const getUserGroupsArray = () => {
+  if (doesCurrentSessionExist()) {
+    if (sessionStorage.getItem(`${APP}_goapi_groups`) == null) return null;
+    if (sessionStorage.getItem(`${APP}_goapi_groups`) === 'null') return null;
+    // let's clone it and converting to an array of integers
+    const tmpArr = sessionStorage.getItem(`${APP}_goapi_groups`);
+    if (tmpArr.indexOf(',') > 0) {
+      return tmpArr.split(',').map((i) => parseInt(i, 10));
+    }
+    return [parseInt(tmpArr, 10)];
+  }
+  return null;
+};
+
+export const isUserHavingGroups = () => {
+  if (doesCurrentSessionExist()) {
+    if (sessionStorage.getItem(`${APP}_goapi_groups`) == null) return false;
+    if (sessionStorage.getItem(`${APP}_goapi_groups`) === 'null') return false;
+    // let's clone it and converting to an array of integers
+    const tmp = sessionStorage.getItem(`${APP}_goapi_groups`);
+    if (tmp.indexOf(',') > 0) {
+      return true;
+    }
+    if (parseInt(tmp, 10) > 0) {
+      return true;
+    }
+    return false;
+  }
+  return false;
+};
+
+
+// must include next line in index.thml header :
+// <script src="https://golux.lausanne.ch/info.php"></script>
+// if client is on recolte, then thank's to F5.. you get all the above in your session storage
+//     GOELAND_IPCLIENT: '10.95.212.99',
+//     GOELAND_TIMEISO8601: '2020-07-10T13:36:10+02:00',
+//     GOELAND_REQUEST_ID: 'fd7f71af-fa70-4eaf-8adf-f29a9689a10f',
+//     GOELAND_LOGIN: 'VDL0039',
+//     GOELAND_EMAIL: 'nom.prenom@lausanne.ch',
+export const getGoLogin = () => {
+  const login = sessionStorage.getItem('GOELAND_LOGIN');
+  if (isNullOrUndefined(login) || (login === 'UNKNOWN')) {
+    return 'UNKNOWN';
+  }
+  return login;
+};
+
+export const getGoEmail = () => {
+  const email = sessionStorage.getItem('GOELAND_EMAIL');
+  if (isNullOrUndefined(email) || (email === 'UNKNOWN')) {
+    return 'UNKNOWN';
+  }
+  return email;
+};
+
+export const getGoIpClient = () => {
+  const ipClient = sessionStorage.getItem('GOELAND_IPCLIENT');
+  if (isNullOrUndefined(ipClient) || (ipClient === 'UNKNOWN')) {
+    return 'UNKNOWN';
+  }
+  return ipClient;
+};
+
+export const getIsGoluxAccessible = () => {
+  const requestId = sessionStorage.getItem('GOELAND_REQUEST_ID');
+  if (isNullOrUndefined(requestId) || (requestId === 'requestId')) {
+    return false;
+  }
+  return true;
+};

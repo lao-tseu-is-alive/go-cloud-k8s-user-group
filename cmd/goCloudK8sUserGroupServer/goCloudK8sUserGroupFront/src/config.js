@@ -1,4 +1,5 @@
-import {Log} from './log/index.js';
+import { Log } from './log/index';
+
 export const APP = 'GoCloudK8sUserGroupFront';
 export const APP_TITLE = 'Goéland';
 export const VERSION = '0.1.2';
