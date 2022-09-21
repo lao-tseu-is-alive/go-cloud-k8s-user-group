@@ -38,8 +38,8 @@ export const getToken = async (baseServerUrl, username, passwordHash) => {
         sessionStorage.setItem(`${APP}_goapi_name`, jwtValues.name);
         sessionStorage.setItem(`${APP}_goapi_username`, username);
         sessionStorage.setItem(`${APP}_goapi_email`, jwtValues.email);
-        sessionStorage.setItem(`${APP}_goapi_isadmin`, jwtValues.admin);
-        sessionStorage.setItem(`${APP}_goapi_groups`, jwtValues.limited_groups);
+        sessionStorage.setItem(`${APP}_goapi_isadmin`, jwtValues.is_admin);
+        sessionStorage.setItem(`${APP}_goapi_groups`, jwtValues.groups);
         sessionStorage.setItem(`${APP}_goapi_date_expiration`, jwtValues.exp);
       }
       return response.data;

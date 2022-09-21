@@ -1,6 +1,7 @@
 package users
 
 import (
+	"encoding/json"
 	"fmt"
 	"github.com/cristalhq/jwt/v4"
 	"github.com/labstack/echo/v4"
@@ -306,7 +307,8 @@ func (s Service) ResetPassword(ctx echo.Context) error {
 	panic("implement me")
 }
 
-func (s Service) Restricted(ctx echo.Context) error {
+func (s Service) GetStatus(ctx echo.Context) error {
+	s.Log.Println("trace: entering GetStatus()")
 	u := ctx.Get("jwtdata").(*jwt.Token)
 	claims := JwtCustomClaims{}
 	err := u.DecodeClaims(&claims)
@@ -315,5 +317,10 @@ func (s Service) Restricted(ctx echo.Context) error {
 	}
 	name := claims.Name
 	idUser := claims.Id
-	return ctx.String(http.StatusOK, fmt.Sprintf("Welcome %s [%d](isAdmin:%v)", name, idUser, claims.IsAdmin))
+	res, err := json.Marshal(claims)
+	if err != nil {
+		echo.NewHTTPError(http.StatusInternalServerError, "JWT User Data Could Not Be Marshaled To Json")
+	}
+	s.Log.Printf("info: GetStatus(user:%s, [%d]", name, idUser)
+	return ctx.JSONBlob(http.StatusOK, res)
 }

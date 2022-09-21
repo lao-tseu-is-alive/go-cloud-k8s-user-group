@@ -97,7 +97,7 @@ const props = defineProps({
   },
 });
 
-const emit = defineEmits(['loginOK', 'loginError']);
+const emit = defineEmits(['login-ok', 'login-error']);
 
 const displayFeedBack = (text, type) => {
   const validTypes = ['success', 'info', 'warn', 'error'];
@@ -160,17 +160,17 @@ const getJwtToken = () => {
             } else {
               displayFeedBack(`ERREUR SERVEUR :  ${val}`, 'error');
             }
-            emit('loginError', 'LOGIN FAILED', val);
+            emit('login-error', 'LOGIN FAILED', val);
           } else {
             log.l('# getJwtToken() SUCCESS res: ', val);
             displayFeedBack('Connexion réussie !', 'success');
-            emit('loginOK', 'LOGIN SUCCESS', val);
+            emit('login-ok', 'LOGIN SUCCESS', val);
           }
         })
         .catch((err) => {
           log.e('# getJwtToken() in catch ERROR err: ', err);
           displayFeedBack(`Il semble qu'il y a un problème de réseau !${err}`, 'error');
-          emit('loginError', 'LOGIN ERROR', err);
+          emit('login-error', 'LOGIN ERROR', err);
         });
       log.l('# getJwtToken() after getToken res:', res);
     } catch (e) {

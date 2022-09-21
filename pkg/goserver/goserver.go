@@ -148,9 +148,9 @@ func NewGoHttpServer(listenAddress string, l *log.Logger, store users.Storage, w
 		},
 	}
 	r.Use(middleware.JWTWithConfig(config))
-	r.GET("restricted", usersService.Restricted)
 	// here the routes defined in OpenApi users.yaml are registered
 	users.RegisterHandlers(r, &usersService)
+	r.GET("/status", usersService.GetStatus)
 
 	myServer := GoHttpServer{
 		listenAddress: listenAddress,
