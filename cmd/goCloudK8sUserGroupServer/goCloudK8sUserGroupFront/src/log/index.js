@@ -34,7 +34,10 @@ const _log = function (moduleName, msg, logtype, ...args) {
       break;
   }
   if (args.length > 0) {
-    args.map((v) => console.log(v));
+    // eslint-disable-next-line no-plusplus
+    for (let i = 0; i < args.length; i++) {
+      console.log(args[i]);
+    }
   }
 };
 export class Log {

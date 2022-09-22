@@ -21,7 +21,6 @@
               autofocus
               @keyup.enter="onEnterKey"
             />
-            <!-- <small id="username-help" class="p-error">cet utilisateur n'existe pas.</small>-->
           </span>
         </div>
         <div class="field w-full">
@@ -73,12 +72,6 @@ const username = ref('');
 const password = ref('');
 const userInput = ref(null);
 const pwdInput = ref(null);
-
-/* const loadedData = ref(false);
-const errorDataFetch = ref(null);
-const password_hash = ref('');
-const validLoginForm = ref(false);
- */
 const feedbackVisible = ref(true);
 const feedbackText = ref('Veuillez vous authentifier SVP.');
 const feedbackType = ref('info');
@@ -119,7 +112,8 @@ const isValidForm = () => {
     displayFeedBack('Veuillez saisir votre utilisateur, il est obligatoire!', 'warn');
     userInput.value.$el.focus();
     return false;
-  } if (password.value.trim().length < 1) {
+  }
+  if (password.value.trim().length < 1) {
     displayFeedBack('Veuillez saisir votre mot de passe, il est obligatoire!', 'warn');
     pwdInput.value.$el.focus();
     return false;
@@ -196,6 +190,3 @@ onMounted(() => {
   clearSessionStorage();
 });
 </script>
-
-<style>
-</style>
