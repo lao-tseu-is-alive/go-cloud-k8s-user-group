@@ -2,9 +2,6 @@
   <header>
     <Toolbar class="w-full m-0 p-0 bg-primary-500 border-0">
       <template #start>
-        <!--        <Message :severity="feedbackType">
-          {{ feedbackMsg }}
-        </Message>-->
         <span class="pl-2 text-white">{{ `${APP_TITLE} v.${VERSION}` }}</span>
       </template>
       <template #end>
@@ -26,7 +23,7 @@
           <LoginUser
             :msg="`Authentification ${APP_TITLE}:`"
             :backend="BACKEND_URL"
-            :enabled="isNetworkOk"
+            :disabled="!isNetworkOk"
             @login-ok="loginSuccess"
             @login-error="loginFailure"
           />
@@ -56,7 +53,7 @@ const isNetworkOk = ref(true);
 const feedback = ref(null);
 const feedbackMsg = ref(`${APP_TITLE}, v.${VERSION}`);
 const feedbackType = ref('info');
-const feedbackVisible = ref(true);
+const feedbackVisible = ref(false);
 const displayFeedBack = (text, type) => {
   log.t(`displayFeedBack() text:'${text}' type:'${type}'`);
   feedbackType.value = type;

@@ -19,6 +19,7 @@
               class="w-full"
               aria-label="veuillez saisir votre utilisateur"
               autofocus
+              :disabled="disabled"
               @keyup.enter="onEnterKey"
             />
           </span>
@@ -30,13 +31,13 @@
               id="go-password"
               ref="pwdInput"
               v-model="password"
-              type="password"
               placeholder="Mot de passe"
               class="w-full"
               input-class="w-full"
               aria-label="veuillez saisir votre mot de passe"
               toggle-mask
               :feedback="false"
+              :disabled="disabled"
               @keyup.enter="onEnterKey"
             />
           </span>
@@ -50,7 +51,12 @@
         </Message>
       </div>
       <div class="justify-content-end text-right">
-        <Button label="CONNEXION" class="p-button-raised p-button-info " @click.prevent="getJwtToken" />
+        <Button
+          label="CONNEXION"
+          class="p-button-raised p-button-info "
+          :disabled="disabled"
+          @click.prevent="getJwtToken"
+        />
       </div>
     </template>
   </Card>
@@ -87,6 +93,10 @@ const props = defineProps({
   backend: {
     type: String,
     required: true,
+  },
+  disabled: {
+    type: Boolean,
+    default: null,
   },
 });
 
