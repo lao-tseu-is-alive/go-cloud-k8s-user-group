@@ -61,12 +61,24 @@ export const getTokenStatus = async (baseServerUrl = BACKEND_URL) => {
     log.l('getTokenStatus() axios.get Success ! response :', res);
     const dExpires = new Date(0);
     dExpires.setUTCSeconds(res.data.exp);
-    log.w(`getTokenStatus() JWT token expiration : ${dExpires}`);
-    return res.data;
+    const msg = `getTokenStatus() JWT token expiration : ${dExpires}`;
+    log.w(msg);
+    const { data } = res;
+    return {
+      msg, err: null, status: res.status, data,
+    };
   } catch (error) {
     const msg = `Error: in getTokenStatus() ## axios.get(${baseServerUrl}/api/status) ERROR ## error :${error}`;
     log.w(msg);
-    return msg;
+    if (error.response) {
+      const errResponse = error.response;
+      return {
+        msg, err: error, status: errResponse.status, data: null,
+      };
+    }
+    return {
+      msg, err: error, status: null, data: null,
+    };
   }
 };
 

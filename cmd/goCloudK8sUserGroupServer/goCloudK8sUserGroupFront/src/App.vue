@@ -40,7 +40,10 @@ import { onMounted, ref } from 'vue';
 import LoginUser from './components/LoginUser.vue';
 import FeedBack from './components/FeedBack.vue';
 import {
-  getUserId, getUserName, getUserEmail, getUserIsAdmin, getTokenStatus, clearSessionStorage,
+  getUserId,
+  getUserName,
+  getUserEmail, getUserIsAdmin, getTokenStatus, clearSessionStorage,
+  doesCurrentSessionExist,
 } from './components/Login';
 import {
   APP, APP_TITLE, BACKEND_URL, BUILD_DATE, VERSION, getLog, HOME,
@@ -54,6 +57,7 @@ const feedback = ref(null);
 const feedbackMsg = ref(`${APP_TITLE}, v.${VERSION}`);
 const feedbackType = ref('info');
 const feedbackVisible = ref(false);
+let autoLogoutTimer = null;
 const displayFeedBack = (text, type) => {
   log.t(`displayFeedBack() text:'${text}' type:'${type}'`);
   feedbackType.value = type;
@@ -72,48 +76,75 @@ const aboutInfo = () => {
   feedbackVisible.value = true;
 };
 
-const loginSuccess = (v) => {
-  log.t(' loginSuccess()', v);
-  isUserAuthenticated.value = true;
-  getTokenStatus()
-    .then((val) => {
-      if (val instanceof Error) {
-        log.e('# getTokenStatus() ERROR err: ', val);
-        if (val.message === 'Network Error') {
-          // displayFeedBack(`Il semble qu'il y a un problème de réseau !${val}`, 'error');
-        }
-        log.e('# getTokenStatus() ERROR err.response: ', val.response);
-        log.w('# getTokenStatus() ERROR err.response.data: ', val.response.data);
-        if (!isNullOrUndefined(val.response)) {
-          let reason = val.response.data;
-          if (!isNullOrUndefined(val.response.data.message)) {
-            reason = val.response.data.message;
-          }
-          log.w(`# getTokenStatus() SERVER SAYS REASON : ${reason}`);
-        }
-      } else {
-        log.l('# getTokenStatus() SUCCESS res: ', val);
-      }
-    })
-    .catch((err) => {
-      log.e('# getJwtToken() in catch ERROR err: ', err);
-      // displayFeedBack(`Il semble qu'il y a un problème de réseau !${err}`, 'error');
-    });
-};
-
-const loginFailure = (v) => {
-  log.w('loginFailure()', v);
-  isUserAuthenticated.value = false;
-};
-
 const logout = () => {
   log.t('# IN logout()');
   clearSessionStorage();
   isUserAuthenticated.value = false;
   displayFeedBack('Vous vous êtes déconnecté de l\'application avec succès !', 'success');
+  if (isNullOrUndefined(autoLogoutTimer)) {
+    clearInterval(autoLogoutTimer);
+  }
   setTimeout(() => {
     window.location.href = HOME;
   }, 2000); // after 2 sec redirect to home page just in case
+};
+
+const checkIsSessionTokenValid = () => {
+  log.t('# IN checkIsSessionTokenValid()');
+  if (doesCurrentSessionExist()) {
+    getTokenStatus()
+      .then((val) => {
+        if (val instanceof Error) {
+          log.e('# getTokenStatus() ERROR err: ', val);
+          if (val.message === 'Network Error') {
+            // displayFeedBack(`Il semble qu'il y a un problème de réseau !${val}`, 'error');
+          }
+          log.e('# getTokenStatus() ERROR err.response: ', val.response);
+          log.w('# getTokenStatus() ERROR err.response.data: ', val.response.data);
+          if (!isNullOrUndefined(val.response)) {
+            let reason = val.response.data;
+            if (!isNullOrUndefined(val.response.data.message)) {
+              reason = val.response.data.message;
+            }
+            log.w(`# getTokenStatus() SERVER SAYS REASON : ${reason}`);
+          }
+        } else {
+          log.l('# getTokenStatus() SUCCESS res: ', val);
+          if (isNullOrUndefined(val.err) && (val.status === 200)) {
+            // everything is okay, session is still valid
+            isUserAuthenticated.value = true;
+            return;
+          }
+          if (val.status === 401) {
+            // jwt token is no more valid
+            isUserAuthenticated.value = false;
+            displayFeedBack('Votre session a expiré !', 'warn');
+            logout();
+          }
+          displayFeedBack(`Un problème est survenu avec votre session erreur: ${val.err}`, 'err');
+        }
+      })
+      .catch((err) => {
+        log.e('# getJwtToken() in catch ERROR err: ', err);
+        displayFeedBack(`Il semble qu'il y a eu un problème réseau ! erreur: ${err}`, 'error');
+      });
+  } else {
+    log.w('SESSION DOES NOT EXIST OR HAS EXPIRED !');
+  }
+};
+
+const loginSuccess = (v) => {
+  log.t(' loginSuccess()', v);
+  isUserAuthenticated.value = true;
+  if (isNullOrUndefined(autoLogoutTimer)) {
+    // check every 60 seconds(60'000 milliseconds) if jwt is still valid
+    autoLogoutTimer = setInterval(checkIsSessionTokenValid, 60000);
+  }
+};
+
+const loginFailure = (v) => {
+  log.w('loginFailure()', v);
+  isUserAuthenticated.value = false;
 };
 
 onMounted(() => {
