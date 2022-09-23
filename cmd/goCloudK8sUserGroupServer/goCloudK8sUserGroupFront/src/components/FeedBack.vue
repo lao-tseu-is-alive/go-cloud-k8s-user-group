@@ -6,7 +6,7 @@
         <div class="p-message-text">
           {{ feedbackText }}
         </div>
-        <button v-if="closable" v-ripple class="p-message-close p-link" type="button">
+        <button v-if="closable" v-ripple class="p-message-close p-link" type="button" @click="feedbackVisible = false">
           <i class="p-message-close-icon pi pi-times" />
         </button>
       </div>

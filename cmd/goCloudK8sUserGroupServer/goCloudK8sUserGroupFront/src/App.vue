@@ -43,7 +43,7 @@ import {
   getUserId,
   getUserName,
   getUserEmail, getUserIsAdmin, getTokenStatus, clearSessionStorage,
-  doesCurrentSessionExist,
+  doesCurrentSessionExist, getUserLogin,
 } from './components/Login';
 import {
   APP, APP_TITLE, BACKEND_URL, BUILD_DATE, VERSION, getLog, HOME,
@@ -68,10 +68,10 @@ const displayFeedBack = (text, type) => {
 const aboutInfo = () => {
   const appInfo = `${APP_TITLE}, v.${VERSION} ${BUILD_DATE}`;
   if (isUserAuthenticated.value) {
-    const userInfo = `${getUserName()} id[${getUserId()}] Admin:${getUserIsAdmin()}`;
-    displayFeedBack(`${appInfo} ⇒ 😊 vous êtes "authentifié" comme ${userInfo}`, 'info');
+    const userInfo = `${getUserLogin()} id[${getUserId()}] Admin:${getUserIsAdmin()}`;
+    displayFeedBack(`${appInfo} ⇒ 😊 vous êtes authentifié comme ${userInfo}`, 'info');
   } else {
-    displayFeedBack(`${appInfo} ⇒ vous n'êtes pas encore "authentifié"`, 'info');
+    displayFeedBack(`${appInfo} ⇒ vous n'êtes pas encore authentifié`, 'info');
   }
   feedbackVisible.value = true;
 };

@@ -156,6 +156,13 @@ export const getUserName = () => {
   return '';
 };
 
+export const getUserLogin = () => {
+  if (doesCurrentSessionExist()) {
+    return `${sessionStorage.getItem(`${APP}_goapi_username`)}`;
+  }
+  return '';
+};
+
 export const getUserIsAdmin = () => {
   if (doesCurrentSessionExist()) {
     return (sessionStorage.getItem(`${APP}_goapi_isadmin`) === 'true');
