@@ -117,7 +117,6 @@ func NewGoHttpServer(listenAddress string, l *log.Logger, store users.Storage, w
 	r := e.Group("/api")
 	// Configure middleware with the custom claims type
 	config := middleware.JWTConfig{
-		//Claims:     &users.JwtCustomClaims{},
 		ContextKey: "jwtdata",
 		SigningKey: usersService.JwtSecret,
 		ParseTokenFunc: func(auth string, c echo.Context) (interface{}, error) {
@@ -148,6 +147,7 @@ func NewGoHttpServer(listenAddress string, l *log.Logger, store users.Storage, w
 		},
 	}
 	r.Use(middleware.JWTWithConfig(config))
+	// TODO: try to refactor all users routes outside of this package
 	// here the routes defined in OpenApi users.yaml are registered
 	users.RegisterHandlers(r, &usersService)
 	r.GET("/status", usersService.GetStatus)

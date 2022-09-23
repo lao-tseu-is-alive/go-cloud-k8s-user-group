@@ -315,12 +315,12 @@ func (s Service) GetStatus(ctx echo.Context) error {
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, err)
 	}
-	name := claims.Name
+	username := claims.Username
 	idUser := claims.Id
 	res, err := json.Marshal(claims)
 	if err != nil {
 		echo.NewHTTPError(http.StatusInternalServerError, "JWT User Data Could Not Be Marshaled To Json")
 	}
-	s.Log.Printf("info: GetStatus(user:%s, [%d]", name, idUser)
+	s.Log.Printf("info: GetStatus(user:%s, id:%d)", username, idUser)
 	return ctx.JSONBlob(http.StatusOK, res)
 }
