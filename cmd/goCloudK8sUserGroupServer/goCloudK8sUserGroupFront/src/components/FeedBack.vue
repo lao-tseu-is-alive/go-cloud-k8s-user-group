@@ -16,7 +16,7 @@
 
 <script setup>
 import {
-  computed, defineProps, onMounted, ref, watch, defineExpose,
+  computed, onMounted, ref, watch,
 } from 'vue';
 import vRipple from 'primevue/ripple';
 import { getLog } from '../config';

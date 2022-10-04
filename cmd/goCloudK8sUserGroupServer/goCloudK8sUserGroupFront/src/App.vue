@@ -16,7 +16,10 @@
     <div class="flex">
       <div class="col-12">
         <FeedBack ref="feedback" :msg="feedbackMsg" :msg-type="feedbackType" :visible="feedbackVisible" />
-        <template v-if="isUserAuthenticated">
+        <template v-if="isUserAuthenticated ">
+          <template v-if="getUserIsAdmin">
+            <ListUsers :display="isUserAuthenticated" />
+          </template>
           <h2>Connexion de {{ getUserName() }} [{{ getUserEmail() }}]</h2>
         </template>
         <template v-else>
@@ -49,6 +52,7 @@ import {
   APP, APP_TITLE, BACKEND_URL, BUILD_DATE, VERSION, getLog, HOME,
 } from './config';
 import { isNullOrUndefined } from './tools/utils';
+import ListUsers from './components/ListUsers.vue';
 
 const log = getLog(APP, 4, 2);
 const isUserAuthenticated = ref(false);
@@ -136,6 +140,7 @@ const checkIsSessionTokenValid = () => {
 const loginSuccess = (v) => {
   log.t(' loginSuccess()', v);
   isUserAuthenticated.value = true;
+  feedbackVisible.value = false;
   if (isNullOrUndefined(autoLogoutTimer)) {
     // check every 60 seconds(60'000 milliseconds) if jwt is still valid
     autoLogoutTimer = setInterval(checkIsSessionTokenValid, 60000);
