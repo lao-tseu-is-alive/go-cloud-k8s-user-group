@@ -19,7 +19,7 @@
                 <i class="pi pi-search" />
                 <InputText
                   v-model="filters['username'].value"
-                  placeholder="filtre de couche"
+                  placeholder="filtre..."
                 />
               </span>
             </div>
@@ -36,8 +36,8 @@
           <Column field="id" />
           <Column field="username" class="align-right" />
           <Column field="name" class="align-right" />
-          <Column field="is_admin" class="align-right" />
-          <Column field="is_locked" class="align-right" />
+          <Column field="is_admin" class="align-center" />
+          <Column field="is_locked" class="align-center" />
         </DataTable>
       </template>
     </Card>

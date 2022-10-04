@@ -15,22 +15,24 @@
   <main>
     <div class="flex">
       <div class="col-12">
-        <FeedBack ref="feedback" :msg="feedbackMsg" :msg-type="feedbackType" :visible="feedbackVisible" />
-        <template v-if="isUserAuthenticated ">
-          <template v-if="getUserIsAdmin">
-            <ListUsers :display="isUserAuthenticated" />
+        <div class="justify-content-center">
+          <FeedBack ref="feedback" :msg="feedbackMsg" :msg-type="feedbackType" :visible="feedbackVisible" />
+          <template v-if="isUserAuthenticated ">
+            <template v-if="getUserIsAdmin">
+              <ListUsers :display="isUserAuthenticated" />
+            </template>
+            <h2>Connexion de {{ getUserName() }} [{{ getUserEmail() }}]</h2>
           </template>
-          <h2>Connexion de {{ getUserName() }} [{{ getUserEmail() }}]</h2>
-        </template>
-        <template v-else>
-          <LoginUser
-            :msg="`Authentification ${APP_TITLE}:`"
-            :backend="BACKEND_URL"
-            :disabled="!isNetworkOk"
-            @login-ok="loginSuccess"
-            @login-error="loginFailure"
-          />
-        </template>
+          <template v-else>
+            <LoginUser
+              :msg="`Authentification ${APP_TITLE}:`"
+              :backend="BACKEND_URL"
+              :disabled="!isNetworkOk"
+              @login-ok="loginSuccess"
+              @login-error="loginFailure"
+            />
+          </template>
+        </div>
       </div>
     </div>
   </main>

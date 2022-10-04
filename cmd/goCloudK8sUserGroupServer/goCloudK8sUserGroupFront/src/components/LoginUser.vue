@@ -1,55 +1,53 @@
 <template>
-  <Card class="surface-card shadow-4 border-round sm:col-12 md:col-6">
+  <Card class="surface-card shadow-4 border-round sm:col-12 md:col-6  md:col-offset-3">
     <template #title>
-      <h4 class="m-2">
+      <h5 class="m-2">
         {{ msg }}
-      </h4>
+      </h5>
     </template>
     <template #content>
-      <div class="justify-content-center">
-        <div class="field ">
-          <span class="p-input-icon-left w-full">
-            <i class="pi pi-user" />
-            <InputText
-              id="go-username"
-              ref="userInput"
-              v-model="username"
-              type="username"
-              placeholder="Utilisateur"
-              class="w-full"
-              aria-label="veuillez saisir votre utilisateur"
-              autofocus
-              :disabled="disabled"
-              @keyup.enter="onEnterKey"
-            />
-          </span>
-        </div>
-        <div class="field w-full">
-          <span class="p-input-icon-left w-full">
-            <i class="pi pi-power-off" />
-            <Password
-              id="go-password"
-              ref="pwdInput"
-              v-model="password"
-              placeholder="Mot de passe"
-              class="w-full"
-              input-class="w-full"
-              aria-label="veuillez saisir votre mot de passe"
-              toggle-mask
-              :feedback="false"
-              :disabled="disabled"
-              @keyup.enter="onEnterKey"
-            />
-          </span>
-        </div>
+      <div class="field ">
+        <span class="p-input-icon-left w-full">
+          <i class="pi pi-user" />
+          <InputText
+            id="go-username"
+            ref="userInput"
+            v-model="username"
+            type="username"
+            placeholder="Utilisateur"
+            class="w-full"
+            aria-label="veuillez saisir votre utilisateur"
+            autofocus
+            :disabled="disabled"
+            @keyup.enter="onEnterKey"
+          />
+        </span>
       </div>
-    </template>
-    <template #footer>
+      <div class="field w-full">
+        <span class="p-input-icon-left w-full">
+          <i class="pi pi-power-off" />
+          <Password
+            id="go-password"
+            ref="pwdInput"
+            v-model="password"
+            placeholder="Mot de passe"
+            class="w-full"
+            input-class="w-full"
+            aria-label="veuillez saisir votre mot de passe"
+            toggle-mask
+            :feedback="false"
+            :disabled="disabled"
+            @keyup.enter="onEnterKey"
+          />
+        </span>
+      </div>
       <div v-if="feedbackVisible">
-        <Message :severity="feedbackType">
+        <Message :severity="feedbackType" class="w-full">
           {{ feedbackText }}
         </Message>
       </div>
+    </template>
+    <template #footer>
       <div class="justify-content-end text-right">
         <Button
           label="CONNEXION"
