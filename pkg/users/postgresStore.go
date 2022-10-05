@@ -17,7 +17,7 @@ import (
 var ErrUsernameNotFound = errors.New("username does not exist")
 
 const (
-	usersList = "SELECT id, name, email, username, creator, create_time, is_admin, is_locked FROM go_users ORDER BY id;"
+	usersList = "SELECT id, name, email, username, creator, create_time, is_admin, is_locked, is_active, bad_password_count FROM go_users ORDER BY id;"
 	usersGet  = `
 SELECT id, name, email, username,
        password_hash, external_id, enterprise, phone, is_locked, is_admin,
@@ -179,7 +179,6 @@ func (db *PGX) Create(u User) (*User, error) {
 		return nil, err
 	}
 	u.PasswordHash = goHash
-
 	err = db.Db.Conn.QueryRow(context.Background(), usersCreate,
 		u.Name, u.Email, u.Username, u.PasswordHash, &u.ExternalId, &u.Enterprise, &u.Phone, //$1-$7
 		u.IsAdmin, u.Creator, &u.Comment).Scan(&lastInsertId)

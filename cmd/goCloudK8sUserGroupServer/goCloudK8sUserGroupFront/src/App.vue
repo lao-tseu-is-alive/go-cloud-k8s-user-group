@@ -21,7 +21,7 @@
             <template v-if="getUserIsAdmin">
               <ListUsers :display="isUserAuthenticated" />
             </template>
-            <h2>Connexion de {{ getUserName() }} [{{ getUserEmail() }}]</h2>
+            <h2>Connexion de {{ getUserLogin() }} [{{ getUserEmail() }}]</h2>
           </template>
           <template v-else>
             <LoginUser
@@ -46,7 +46,6 @@ import LoginUser from './components/LoginUser.vue';
 import FeedBack from './components/FeedBack.vue';
 import {
   getUserId,
-  getUserName,
   getUserEmail, getUserIsAdmin, getTokenStatus, clearSessionStorage,
   doesCurrentSessionExist, getUserLogin,
 } from './components/Login';
@@ -176,5 +175,6 @@ onMounted(() => {
 html, body {
   padding: 0;
   margin: 0;
+  min-width: 240px;
 }
 </style>

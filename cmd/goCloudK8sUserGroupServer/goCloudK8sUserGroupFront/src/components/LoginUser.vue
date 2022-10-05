@@ -67,7 +67,7 @@ import Card from 'primevue/card';
 import InputText from 'primevue/inputtext';
 import Password from 'primevue/password';
 import Message from 'primevue/inlinemessage';
-import { getLog } from '../config';
+import { getLog, DEV } from '../config';
 import { getPasswordHash, getToken, clearSessionStorage } from './Login';
 import { isNullOrUndefined } from '../tools/utils';
 
@@ -195,6 +195,10 @@ const onEnterKey = () => {
 onMounted(() => {
   const method = 'mounted()';
   log.t(`${method}`);
+  if (DEV) {
+    username.value = 'go-admin';
+    password.value = 'go123';
+  }
   clearSessionStorage();
 });
 </script>
