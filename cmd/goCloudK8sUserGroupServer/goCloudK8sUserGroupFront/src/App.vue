@@ -102,7 +102,7 @@ const checkIsSessionTokenValid = () => {
         if (val instanceof Error) {
           log.e('# getTokenStatus() ERROR err: ', val);
           if (val.message === 'Network Error') {
-            // displayFeedBack(`Il semble qu'il y a un problème de réseau !${val}`, 'error');
+            displayFeedBack(`Il semble qu'il y a un problème de réseau !${val}`, 'error');
           }
           log.e('# getTokenStatus() ERROR err.response: ', val.response);
           log.w('# getTokenStatus() ERROR err.response.data: ', val.response.data);
