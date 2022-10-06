@@ -1,6 +1,5 @@
 import sha256 from 'crypto-js/sha256';
 import axios from 'axios';
-import { isNullOrUndefined } from '../tools/utils';
 import { getLog, APP, BACKEND_URL } from '../config';
 
 const log = getLog('Login', 2, 1);

@@ -51,25 +51,31 @@ func (s Service) UsersCreate(ctx echo.Context) error {
 		Creator: int32(currentUserId),
 	}
 	if err := ctx.Bind(newUser); err != nil {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("CreateUser has invalid format [%v]", err))
+		return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("CreateUser has invalid format [%v]", err))
 	}
 	if len(newUser.Name) < 1 {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprint("CreateUser task cannot be empty"))
+		return ctx.JSON(http.StatusBadRequest, fmt.Sprint("CreateUser name cannot be empty"))
 	}
 	if len(newUser.Name) < 6 {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprint("CreateUser task minLength is 5"))
+		return ctx.JSON(http.StatusBadRequest, fmt.Sprint("CreateUser name minLength is 5"))
+	}
+	if len(newUser.Username) < 1 {
+		return ctx.JSON(http.StatusBadRequest, fmt.Sprint("CreateUser username cannot be empty"))
+	}
+	if len(newUser.Username) < 6 {
+		return ctx.JSON(http.StatusBadRequest, fmt.Sprint("CreateUser username minLength is 5"))
 	}
 	if !crypto.ValidatePasswordHash(newUser.PasswordHash) {
 		msg := fmt.Sprintf("CreateUser received invalid password hash in request body")
 		s.Log.Printf(msg)
-		return echo.NewHTTPError(http.StatusBadRequest, msg)
+		return ctx.JSON(http.StatusBadRequest, msg)
 	}
 	s.Log.Printf("# CreateUser() newUser : %#v\n", newUser)
 	userCreated, err := s.Store.Create(*newUser)
 	if err != nil {
 		msg := fmt.Sprintf("CreateUser had an error saving user:%#v, err:%#v", *newUser, err)
 		s.Log.Printf(msg)
-		return echo.NewHTTPError(http.StatusBadRequest, msg)
+		return ctx.JSON(http.StatusBadRequest, msg)
 	}
 	s.Log.Printf("# CreateUser() User %#v\n", userCreated)
 	return ctx.JSON(http.StatusCreated, userCreated)

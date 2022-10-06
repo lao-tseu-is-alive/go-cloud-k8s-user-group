@@ -125,6 +125,7 @@ import InputSwitch from 'primevue/inputswitch';
 import Textarea from 'primevue/textarea';
 import { FilterMatchMode } from 'primevue/api';
 import user from './User';
+import { getPasswordHash } from './Login';
 import { getLog } from '../config';
 import { isNullOrUndefined } from '../tools/utils';
 
@@ -141,10 +142,10 @@ const dt = ref();
 // u.IsAdmin, u.Creator, &u.Comment
 const defaultUser = {
   id: 0,
-  name: '',
-  email: '',
-  username: '',
-  password_hash: '',
+  name: 'otto',
+  email: 'o@o.com',
+  username: 'ouser',
+  password_hash: 'otto',
   enterprise: null,
   phone: null,
   comment: null,
@@ -202,13 +203,7 @@ const findIndexById = (id) => {
 const openNew = () => {
   const method = 'openNew';
   log.t(`##-->${moduleName}::${method}`);
-  dataNewUser.value = {
-    id: 0,
-    username: '',
-    name: '',
-    is_admin: false,
-    is_locked: false,
-  };
+  dataNewUser.value = defaultUser;
   submitted.value = false;
   userDialog.value = true;
 };
@@ -230,14 +225,30 @@ const saveUser = () => {
       toast.add({
         severity: 'success', summary: 'Successful', detail: 'User Updated', life: 3000,
       });
-    } else {
-      dataNewUser.value.id = 9999;
-      dataUsers.value.push(dataNewUser.value);
-      toast.add({
-        severity: 'success', summary: 'Successful', detail: 'User Created', life: 3000,
+    } else { // NEW USER
+      log.l(`##-->${moduleName}::${method} SAVING NEW USER`);
+      const tempUser = { ...dataNewUser.value };
+      tempUser.id = 0;
+      tempUser.password_hash = `${getPasswordHash(dataNewUser.value.password_hash)}`;
+      user.newUser(tempUser, (retval, errorMsg) => {
+        if (errorMsg === 'SUCCESS') {
+          log.w('# in saveDialog callback for user.newUser call val', retval);
+          toast.add({
+            severity: 'success', summary: 'Successful', detail: `User created in DB id: ${retval.id}`, life: 3000,
+          });
+          log.w(`# in saveDialog for new item id ${retval}`);
+          tempUser.datecreated = new Date();
+          tempUser.id = retval.id;
+          dataUsers.value.push(tempUser);
+          // this.initialize(); // on recupere la liste a jour
+        } else {
+          log.e(`# ERROR in saveDialog callback for objet.newObjet call ERROR : ${errorMsg} val`, retval);
+          toast.add({
+            severity: 'error', summary: 'Error', detail: `User was not created in DB id: ${errorMsg}`, life: 3000,
+          });
+        }
       });
     }
-
     userDialog.value = false;
     dataNewUser.value = {};
   }
