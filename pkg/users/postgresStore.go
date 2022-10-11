@@ -50,9 +50,9 @@ SET name                   = $1,
     inactivation_time      = $10,
     inactivation_reason    = $11,
     comment                = $12,
-    password_hash          = $13,
-    external_id   		   = $14    
-WHERE id = $15;
+    external_id   		   = $13,
+	bad_password_count	   = 0  -- we decide to reset counter every time an admin update users
+WHERE id = $14;
 `
 	usersDelete      = "DELETE FROM go_users WHERE id = $1"
 	usersCreateTable = `
@@ -282,7 +282,23 @@ func (db *PGX) Update(id int32, user User) (*User, error) {
 	var err error
 	now := time.Now()
 	user.LastModificationTime = &now
-	rowsAffected, err = db.Db.ExecActionQuery(usersUpdate, user.Name, user.IsActive, user.LastModificationTime, id)
+	if user.IsActive == false {
+		user.InactivationTime = &now
+	} else {
+		user.InactivationTime = nil
+	}
+	if len(user.PasswordHash) > 0 {
+		err := db.ResetPassword(id, user.PasswordHash, int(*user.LastModificationUser))
+		if err != nil {
+			return nil, GetErrorF("error: Update() reset password failed", err)
+		}
+		db.log.Printf("info : password change successful for user id [%d]", id)
+	}
+	db.log.Printf("info : just before Update(%+v)", user)
+	rowsAffected, err = db.Db.ExecActionQuery(usersUpdate,
+		user.Name, user.Email, user.Username,
+		&user.Enterprise, &user.Phone, user.IsLocked, user.IsAdmin, user.LastModificationUser,
+		user.IsActive, &user.InactivationTime, &user.InactivationReason, &user.Comment, user.ExternalId, id)
 	if err != nil {
 		return nil, GetErrorF("error: Update() query failed", err)
 	}
@@ -328,4 +344,36 @@ func (db *PGX) FindUsername(username string) (int32, error) {
 }
 func (db *PGX) Close() {
 	db.Db.Close()
+}
+
+func (db *PGX) IsUserAdmin(idUser int32) bool {
+	var isAdmin bool
+	isAdmin, err := db.Db.GetQueryBool("SELECT is_admin FROM go_users WHERE id = $1", idUser)
+	if err != nil {
+		db.log.Printf("error: IsUserAdmin(%d) could not be retrieved from DB. failed db.Query err: %v", idUser, err)
+		return false
+	}
+	return isAdmin
+
+}
+
+// ResetPassword the user password stored in DB for given id
+func (db *PGX) ResetPassword(id int32, passwordHash string, idCurrentUser int) error {
+	db.log.Printf("trace : entering ResetPassword(%d)", id)
+	goHash, err := crypto.HashAndSalt(passwordHash)
+	if err != nil {
+		db.log.Printf("error : ResetPassword(%d) had an error doing crypto.HashAndSalt. error : %v", id, err)
+		return err
+	}
+	rowsAffected, err := db.Db.ExecActionQuery(
+		"UPDATE go_user SET is_locked=false, password_hash = $1, last_modification_time = now(), last_modification_user = $2  WHERE id = $3;",
+		goHash, idCurrentUser, id)
+	if err != nil {
+		return GetErrorF("error : could not reset password for user ", err)
+	}
+	if rowsAffected < 1 {
+		return GetErrorF("error : password fo user was not reset", err)
+	}
+	// if we get to here all is good
+	return nil
 }

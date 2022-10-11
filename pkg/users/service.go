@@ -161,16 +161,18 @@ func (s Service) UsersDelete(ctx echo.Context, userId int32) error {
 // curl -v -XPUT -H "Content-Type: application/json" -d '{"id": 3, "task":"learn Linux", "completed": false}'  'http://localhost:8888/users/3'
 func (s Service) UsersUpdate(ctx echo.Context, userId int32) error {
 	s.Log.Printf("trace: entering UpdateUser(%d)", userId)
-	/* uncomment when jw is implemented
 	// get the current user from JWT TOKEN
-	user := ctx.Get("user").(*jwt.Token)
-	claims := user.Claims.(*MyCustomJWTClaims)
+	u := ctx.Get("jwtdata").(*jwt.Token)
+	claims := JwtCustomClaims{}
+	err := u.DecodeClaims(&claims)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, err)
+	}
 	// IF USER IS NOT ADMIN RETURN 401 Unauthorized
-	currentUserId := claims.ID
+	currentUserId := claims.Id
 	if !s.Store.IsUserAdmin(currentUserId) {
 		return echo.NewHTTPError(http.StatusUnauthorized, "current user has no admin privilege")
 	}
-	*/
 	if s.Store.Exist(userId) == false {
 		msg := fmt.Sprintf("UpdateUser(%d) cannot modify this id, it does not exist.", userId)
 		s.Log.Printf(msg)
@@ -180,8 +182,9 @@ func (s Service) UsersUpdate(ctx echo.Context, userId int32) error {
 	if err := ctx.Bind(t); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("UpdateUser has invalid format [%v]", err))
 	}
+	t.LastModificationUser = &currentUserId
 	if len(t.Name) < 1 {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprint("CreateUser task cannot be empty"))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprint("UsersUpdate username cannot be empty"))
 	}
 	//refuse an attempt to modify a userId (in url) with a different id in the body !
 	if t.Id != userId {

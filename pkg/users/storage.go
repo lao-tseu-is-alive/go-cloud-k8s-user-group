@@ -36,6 +36,8 @@ type Storage interface {
 	FindUsername(username string) (int32, error)
 	// Close terminates properly the connection to the backend
 	Close()
+	// IsUserAdmin returns true if the user with the specified id has the is_admin attribute set to true
+	IsUserAdmin(id int32) bool
 }
 
 func GetStorageInstance(dbDriver, dbConnectionString string, log *log.Logger) (Storage, error) {

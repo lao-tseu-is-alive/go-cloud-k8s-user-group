@@ -12,7 +12,11 @@ const getErrorMessage = (method, msg, err) => {
     const errResponse = err.response;
     log.e(' -- The request was made, but the server responded with a status code > 2xx', errResponse, errResponse.data);
     lastErrorMsg = ` ${method} : La requete http a recu en retour un code status=${errResponse.status} >200 ! `;
-    errMessage += `${lastErrorMsg} <br> Message serveur : ${errResponse.data}`;
+    if (typeof errResponse.data === 'object') {
+      errMessage += `${lastErrorMsg} <br> Message serveur : ${errResponse.data.message}`;
+    } else {
+      errMessage += `${lastErrorMsg} <br> Message serveur : ${errResponse.data}`;
+    }
   } else if (err.request) {
     log.e(' -- The request was made, but no response was received from the server', err.request);
     lastErrorMsg = ` ${method} : La requete http n'a pas reçu de reponse du serveur ! `;

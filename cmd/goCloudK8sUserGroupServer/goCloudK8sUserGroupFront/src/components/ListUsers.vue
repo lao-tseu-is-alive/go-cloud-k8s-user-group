@@ -48,48 +48,52 @@
     </DataTable>
   </div>
   <!-- BEGIN DIALOG EDIT USER -->
-  <Dialog v-model:visible="userDialog" :style="{ width: '450px' }" header="User Details" :modal="true" class="p-fluid">
+  <Dialog v-model:visible="userDialog" :style="{ width: '450px' }" :header="`User id [${dataCurrentUser.id}] details`" :modal="true" class="p-fluid">
     <div class="field">
       <label for="name">Name</label>
-      <InputText id="name" v-model.trim="dataNewUser.name" required="true" autofocus :class="{ 'p-invalid': submitted && !dataNewUser.name }" />
-      <small v-if="submitted && !dataNewUser.name" class="p-error">Name is required.</small>
+      <InputText id="name" v-model.trim="dataCurrentUser.name" required="true" autofocus :class="{ 'p-invalid': submitted && !dataCurrentUser.name }" />
+      <small v-if="submitted && !dataCurrentUser.name" class="p-error">Name is required.</small>
     </div>
     <div class="field">
       <label for="name">Username</label>
-      <InputText id="username" v-model.trim="dataNewUser.username" required="true" :class="{ 'p-invalid': submitted && !dataNewUser.username }" />
-      <small v-if="submitted && !dataNewUser.username" class="p-error">Username is required.</small>
+      <InputText id="username" v-model.trim="dataCurrentUser.username" required="true" :class="{ 'p-invalid': submitted && !dataCurrentUser.username }" />
+      <small v-if="submitted && !dataCurrentUser.username" class="p-error">Username is required.</small>
     </div>
     <div class="field">
       <label for="name">Password</label>
-      <InputText id="email" v-model.trim="dataNewUser.password_hash" required="true" :class="{ 'p-invalid': submitted && !dataNewUser.password_hash }" />
-      <small v-if="submitted && !dataNewUser.password_hash" class="p-error">Password is required.</small>
+      <InputText id="password" v-model.trim="dataCurrentUser.password" type="password" :class="{ 'p-invalid': submitted && isNewUser && !dataCurrentUser.password }" />
+      <small v-if="submitted && isNewUser && !dataCurrentUser.password" class="p-error">Password is required.</small>
     </div>
     <div class="field">
       <label for="name">Email</label>
-      <InputText id="email" v-model.trim="dataNewUser.email" required="true" :class="{ 'p-invalid': submitted && !dataNewUser.email }" />
-      <small v-if="submitted && !dataNewUser.email" class="p-error">Email is required.</small>
+      <InputText id="email" v-model.trim="dataCurrentUser.email" required="true" :class="{ 'p-invalid': submitted && !dataCurrentUser.email }" />
+      <small v-if="submitted && !dataCurrentUser.email" class="p-error">Email is required.</small>
     </div>
     <div class="field">
       <label for="name">OrgUnit</label>
-      <InputText id="email" v-model.trim="dataNewUser.enterprise" />
+      <InputText id="email" v-model.trim="dataCurrentUser.enterprise" />
     </div>
     <div class="field">
       <label for="name">Phone</label>
-      <InputText id="email" v-model.trim="dataNewUser.phone" />
+      <InputText id="email" v-model.trim="dataCurrentUser.phone" />
     </div>
     <div class="field">
       <label for="description">Comment</label>
-      <Textarea id="description" v-model="dataNewUser.comment" required="true" rows="3" cols="20" />
+      <Textarea id="description" v-model="dataCurrentUser.comment" required="true" rows="3" cols="20" />
     </div>
 
     <div class="formgrid grid">
       <div class="field col">
         <label for="isadmin">Is Administrator ?</label>
-        <InputSwitch id="isadmin" v-model="dataNewUser.is_admin" />
+        <InputSwitch id="isadmin" v-model="dataCurrentUser.is_admin" />
       </div>
       <div class="field col">
         <label for="islocked">IS locked ?</label>
-        <InputSwitch id="islocked" v-model="dataNewUser.is_locked" />
+        <InputSwitch id="islocked" v-model="dataCurrentUser.is_locked" />
+      </div>
+      <div class="field col">
+        <label for="isactive">IS active ?</label>
+        <InputSwitch id="isactive" v-model="dataCurrentUser.is_active" />
       </div>
     </div>
     <template #footer>
@@ -101,7 +105,9 @@
   <Dialog v-model:visible="deleteUserDialog" :style="{ width: '450px' }" header="Confirm" :modal="true">
     <div class="confirmation-content">
       <i class="pi pi-exclamation-triangle mr-3" style="font-size: 2rem" />
-      <span v-if="dataNewUser">Are you sure you want to delete <b>{{ dataNewUser.name }}</b>?</span>
+      <span v-if="dataCurrentUser">
+        Are you sure you want to delete <b>{{ dataCurrentUser.name }}</b>?
+      </span>
     </div>
     <template #footer>
       <Button label="No" icon="pi pi-times" class="p-button-text" @click="deleteUserDialog = false" />
@@ -125,7 +131,7 @@ import InputSwitch from 'primevue/inputswitch';
 import Textarea from 'primevue/textarea';
 import { FilterMatchMode } from 'primevue/api';
 import user from './User';
-import { getPasswordHash } from './Login';
+import { getPasswordHash, getUserId } from './Login';
 import { getLog } from '../config';
 import { isNullOrUndefined } from '../tools/utils';
 
@@ -138,6 +144,7 @@ const loadedData = ref(false);
 const userDialog = ref(false);
 const deleteUserDialog = ref(false);
 const submitted = ref(false);
+const isNewUser = ref(false);
 const toast = useToast();
 const dt = ref();
 // u.Name, u.Email, u.Username, u.PasswordHash, &u.ExternalId, &u.Enterprise, &u.Phone, //$1-$7
@@ -147,7 +154,9 @@ const defaultUser = {
   name: 'otto',
   email: 'o@o.com',
   username: 'ouser',
-  password_hash: 'otto',
+  password: '',
+  password_hash: '',
+  external_id: 0,
   enterprise: null,
   phone: null,
   comment: null,
@@ -155,7 +164,7 @@ const defaultUser = {
   is_locked: false,
   is_active: true,
 };
-const dataNewUser = ref(defaultUser);
+const dataCurrentUser = ref(defaultUser);
 const dataUsers = ref([defaultUser]);
 const filters = ref({
   global: { value: null, matchMode: FilterMatchMode.CONTAINS },
@@ -205,33 +214,56 @@ const findIndexById = (id) => {
 const openNew = () => {
   const method = 'openNew';
   log.t(`##-->${moduleName}::${method}`);
-  dataNewUser.value = defaultUser;
+  dataCurrentUser.value = defaultUser;
   submitted.value = false;
+  isNewUser.value = true;
   userDialog.value = true;
 };
 const hideDialog = () => {
   const method = 'hideDialog';
   log.t(`##-->${moduleName}::${method}`);
   userDialog.value = false;
+  isNewUser.value = false;
   submitted.value = false;
 };
 const saveUser = () => {
   const method = 'saveUser';
-  log.t(`##-->${moduleName}::${method}`);
+  log.t(`##-->${moduleName}::${method} id:[${dataCurrentUser.value.id}`);
   submitted.value = true;
 
-  if (dataNewUser.value.name.trim()) {
-    if (dataNewUser.value.id) {
-      dataUsers.value[findIndexById(dataNewUser.value.id)] = dataNewUser.value;
-      // ('⚡⚡⚠ PAS DE RESEAU ! ☹ vous êtes "OFFLINE" ', 'error');
-      toast.add({
-        severity: 'success', summary: 'Successful', detail: 'User Updated', life: timeToDisplaySucces,
+  if (dataCurrentUser.value.name.trim()) {
+    if (dataCurrentUser.value.id) { // SAVE EDITED USER
+      log.l(`##-->${moduleName}::${method} SAVING EDITED USER id:[${dataCurrentUser.value.id}]`);
+      isNewUser.value = false;
+      const tempUser = { ...dataCurrentUser.value };
+      if (!isNullOrUndefined(tempUser.password) && tempUser.password.trim().length > 2) {
+        tempUser.password_hash = `${getPasswordHash(tempUser.password)}`;
+      } else {
+        tempUser.password_hash = '';
+      }
+      user.modifyUser(tempUser, (retval, errorMsg) => {
+        if (errorMsg === 'SUCCESS') {
+          toast.add({
+            severity: 'success', summary: 'Successful', detail: 'User Updated', life: timeToDisplaySucces,
+          });
+          log.l('# in save callback for user.modifyUser call val', retval);
+          dataUsers.value[findIndexById(retval.id)] = retval;
+          log.l('# findIndexById(retval.id) : ', retval.id, findIndexById(retval.id));
+          log.l('# dataUsers.value : ', dataUsers.value);
+          // this.initialize(); // on recupere la liste a jour
+        } else {
+          log.e(`##-->${moduleName}::${method} ERROR SAVING EDITED USER id:[${dataCurrentUser.value.id}] ERROR : ${errorMsg}`, retval);
+          toast.add({
+            severity: 'error', summary: 'Error', detail: `⚡⚡⚠ User was not saved in DB ! error: ${errorMsg}`, life: timeToDisplayError,
+          });
+        }
       });
     } else { // NEW USER
       log.l(`##-->${moduleName}::${method} SAVING NEW USER`);
-      const tempUser = { ...dataNewUser.value };
+      isNewUser.value = true;
+      const tempUser = { ...dataCurrentUser.value };
       tempUser.id = 0;
-      tempUser.password_hash = `${getPasswordHash(dataNewUser.value.password_hash)}`;
+      tempUser.password_hash = `${getPasswordHash(dataCurrentUser.value.password_hash)}`;
       user.newUser(tempUser, (retval, errorMsg) => {
         if (errorMsg === 'SUCCESS') {
           log.w('# in saveDialog callback for user.newUser call val', retval);
@@ -246,35 +278,69 @@ const saveUser = () => {
         } else {
           log.e(`# ERROR in saveDialog callback for objet.newObjet call ERROR : ${errorMsg} val`, retval);
           toast.add({
-            severity: 'error', summary: 'Error', detail: `User was not created in DB error: ${errorMsg}`, life: timeToDisplayError,
+            severity: 'error', summary: 'Error', detail: `⚡⚡⚠ User was not created in DB ! error: ${errorMsg}`, life: timeToDisplayError,
           });
         }
       });
     }
     userDialog.value = false;
-    dataNewUser.value = {};
+    dataCurrentUser.value = defaultUser;
   }
 };
 const editUser = (currentUser) => {
   const method = 'editUser';
   log.t(`##-->${moduleName}::${method}`, currentUser);
-  dataNewUser.value = { ...currentUser };
-  userDialog.value = true;
+  dataCurrentUser.value = { ...currentUser };
+  user.getUser(currentUser.id, (retval, errorMsg) => {
+    if (errorMsg === 'SUCCESS') {
+      log.l('# in editUser callback for user.getUser call val', retval);
+      dataCurrentUser.value = { ...retval };
+      userDialog.value = true;
+    } else {
+      log.e(`# ERROR in editItem callback for user.getUser call ERROR : ${errorMsg} val:`, retval);
+      toast.add({
+        severity: 'error', summary: 'Error', detail: `⚡⚡⚠ Unable to retrieve this User id: [${currentUser.value.id} from DB ! error: ${errorMsg}`, life: timeToDisplayError,
+      });
+    }
+  });
 };
 const confirmDeleteUser = (currentUser) => {
   const method = 'confirmDeleteUser';
   log.t(`##-->${moduleName}::${method}`);
-  dataNewUser.value = currentUser;
+  if (currentUser.id === getUserId()) {
+    toast.add({
+      severity: 'error', summary: 'Error', detail: `⚡⚡⚠ You cannot erase your own account ! User id: [${currentUser.value.id} `, life: timeToDisplayError,
+    });
+    return;
+  }
+  dataCurrentUser.value = currentUser;
   deleteUserDialog.value = true;
 };
 const deleteUser = () => {
   const method = 'deleteUser';
-  log.t(`##-->${moduleName}::${method}`);
-  dataUsers.value = dataUsers.value.filter((val) => val.id !== dataNewUser.value.id);
-  deleteUserDialog.value = false;
-  dataNewUser.value = {};
-  toast.add({
-    severity: 'success', summary: 'Successful', detail: 'User Deleted', life: 3000,
+  const { id } = dataCurrentUser.value;
+  log.t(`##-->${moduleName}::${method}(id:${id})`);
+  if (id === getUserId()) {
+    toast.add({
+      severity: 'error', summary: 'Error', detail: `⚡⚡⚠ You cannot erase your own account ! User id: [${dataCurrentUser.value.id} `, life: timeToDisplayError,
+    });
+    return;
+  }
+  user.deleteUser(id, (retval, errorMsg) => {
+    if (errorMsg === 'SUCCESS') {
+      log.w('# in saveDialog callback for user.deleteUser call val', retval);
+      dataUsers.value = dataUsers.value.filter((val) => val.id !== dataCurrentUser.value.id);
+      deleteUserDialog.value = false;
+      dataCurrentUser.value = defaultUser;
+      toast.add({
+        severity: 'success', summary: 'Successful', detail: 'User Deleted', life: timeToDisplaySucces,
+      });
+    } else {
+      log.e(`# ERROR in deleteUser callback for user.deleteUser call ERROR : ${errorMsg} val:`, retval);
+      toast.add({
+        severity: 'error', summary: 'Error', detail: `⚡⚡⚠ Unable to delete this User id: [${dataCurrentUser.value.id} from DB ! error: ${errorMsg}`, life: timeToDisplayError,
+      });
+    }
   });
 };
 
