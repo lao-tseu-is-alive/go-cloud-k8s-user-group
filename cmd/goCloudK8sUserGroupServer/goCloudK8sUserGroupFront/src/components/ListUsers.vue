@@ -130,6 +130,8 @@ import { getLog } from '../config';
 import { isNullOrUndefined } from '../tools/utils';
 
 const moduleName = 'ListUsers';
+const timeToDisplayError = 7000;
+const timeToDisplaySucces = 4000;
 
 const log = getLog(moduleName, 4, 2);
 const loadedData = ref(false);
@@ -223,7 +225,7 @@ const saveUser = () => {
       dataUsers.value[findIndexById(dataNewUser.value.id)] = dataNewUser.value;
       // ('⚡⚡⚠ PAS DE RESEAU ! ☹ vous êtes "OFFLINE" ', 'error');
       toast.add({
-        severity: 'success', summary: 'Successful', detail: 'User Updated', life: 3000,
+        severity: 'success', summary: 'Successful', detail: 'User Updated', life: timeToDisplaySucces,
       });
     } else { // NEW USER
       log.l(`##-->${moduleName}::${method} SAVING NEW USER`);
@@ -234,7 +236,7 @@ const saveUser = () => {
         if (errorMsg === 'SUCCESS') {
           log.w('# in saveDialog callback for user.newUser call val', retval);
           toast.add({
-            severity: 'success', summary: 'Successful', detail: `User created in DB id: ${retval.id}`, life: 3000,
+            severity: 'success', summary: 'Successful', detail: `User created in DB id: ${retval.id}`, life: timeToDisplaySucces,
           });
           log.w(`# in saveDialog for new item id ${retval}`);
           tempUser.datecreated = new Date();
@@ -244,7 +246,7 @@ const saveUser = () => {
         } else {
           log.e(`# ERROR in saveDialog callback for objet.newObjet call ERROR : ${errorMsg} val`, retval);
           toast.add({
-            severity: 'error', summary: 'Error', detail: `User was not created in DB id: ${errorMsg}`, life: 3000,
+            severity: 'error', summary: 'Error', detail: `User was not created in DB error: ${errorMsg}`, life: timeToDisplayError,
           });
         }
       });

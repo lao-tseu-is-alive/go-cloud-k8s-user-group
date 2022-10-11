@@ -16,6 +16,7 @@
     <div class="flex">
       <div class="col-12">
         <div class="justify-content-center">
+          <Toast position="top-center" />
           <FeedBack ref="feedback" :msg="feedbackMsg" :msg-type="feedbackType" :visible="feedbackVisible" />
           <template v-if="isUserAuthenticated ">
             <template v-if="getUserIsAdmin">
@@ -41,6 +42,7 @@
 <script setup>
 import Toolbar from 'primevue/toolbar';
 import Button from 'primevue/button';
+import Toast from 'primevue/toast';
 import { onMounted, ref } from 'vue';
 import LoginUser from './components/LoginUser.vue';
 import FeedBack from './components/FeedBack.vue';
