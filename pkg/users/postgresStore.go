@@ -17,30 +17,30 @@ import (
 var ErrUsernameNotFound = errors.New("username does not exist")
 
 const (
-	usersList = "SELECT id, name, email, username, creator, create_time, is_admin, is_locked, is_active, bad_password_count FROM go_users ORDER BY id;"
+	usersList = "SELECT id, name, email, username, creator, create_time, is_admin, is_locked, is_active, bad_password_count FROM go_user ORDER BY id;"
 	usersGet  = `
 SELECT id, name, email, username,
-       password_hash, external_id, enterprise, phone, is_locked, is_admin,
+       password_hash, external_id, orgunit_id, phone, is_locked, is_admin,
        create_time, creator, last_modification_time, last_modification_user, 
        is_active, inactivation_time, inactivation_reason, comment, bad_password_count
-FROM go_users WHERE id=$1;`
+FROM go_user WHERE id=$1;`
 
-	usersExist   = "SELECT COUNT(*) FROM go_users WHERE id=$1"
-	usernameFind = "SELECT id FROM go_users WHERE username=$1;"
-	usersCount   = "SELECT COUNT(*) FROM go_users"
-	usersMaxId   = "SELECT MAX(id) FROM go_users"
-	usersCreate  = `INSERT INTO go_users
-(name, email, username, password_hash, external_id, enterprise, phone,
+	usersExist   = "SELECT COUNT(*) FROM go_user WHERE id=$1"
+	usernameFind = "SELECT id FROM go_user WHERE username=$1;"
+	usersCount   = "SELECT COUNT(*) FROM go_user"
+	usersMaxId   = "SELECT MAX(id) FROM go_user"
+	usersCreate  = `INSERT INTO go_user
+(name, email, username, password_hash, external_id, orgunit_id, phone,
  is_locked, is_admin, create_time, creator, is_active, comment, bad_password_count)
 VALUES ($1, $2, $3, $4, $5, $6, $7, false, $8, CURRENT_TIMESTAMP,$9,true,$10,0)
 RETURNING id;`
 
 	usersUpdate = `
-UPDATE go_users
+UPDATE go_user
 SET name                   = $1,
     email                  = $2,
     username               = $3,
-    enterprise             = $4,
+    orgunit_id             = $4,
     phone                  = $5,
     is_locked              = $6,
     is_admin               = $7,
@@ -54,11 +54,11 @@ SET name                   = $1,
 	bad_password_count	   = 0  -- we decide to reset counter every time an admin update users
 WHERE id = $14;
 `
-	usersDelete      = "DELETE FROM go_users WHERE id = $1"
+	usersDelete      = "DELETE FROM go_user WHERE id = $1"
 	usersCreateTable = `
-CREATE TABLE IF NOT EXISTS go_users
+CREATE TABLE IF NOT EXISTS go_user
 (
-    id        	serial    CONSTRAINT go_users_pk   primary key,
+    id        	serial    CONSTRAINT go_user_pk   primary key,
     name			text	not null	constraint go_user_unique_name	unique
         								constraint name_min_length check (length(btrim(name)) > 2),
     email			text	not null	constraint go_user_unique_email unique
@@ -66,8 +66,9 @@ CREATE TABLE IF NOT EXISTS go_users
     username		text	not null	constraint go_user_unique_username unique
 										constraint username_min_length check (length(btrim(username)) > 2),
     password_hash	text	not null 	constraint password_hash_min_length check (length(btrim(password_hash)) > 30),
-	external_id		text,
-    enterprise		text,
+	external_id		int,
+    orgunit_id		int,
+    groups_id		int [],
     phone			text,
     is_locked		boolean   default false not null,
     is_admin		boolean   default false not null,
@@ -81,11 +82,42 @@ CREATE TABLE IF NOT EXISTS go_users
     comment                	text,
     bad_password_count     	integer default 0 not null
 );
-comment on table go_users is 'go_user is the main table of the GO_USER microservice';
+comment on table go_user is 'go_user is the main table of the GO_USER microservice';
 `
 	insertAdminUser = `
-INSERT INTO go_users (name, email, username, password_hash, is_admin, creator, comment) 
-VALUES ('Initial Administrative Account','admin@example.com',$1,$2, true, 1, 'Initial Setup of Admin account')  RETURNING id;`
+INSERT INTO go_user (name, email, username, password_hash, is_admin, creator, comment) 
+VALUES ('Administrative Account','admin@example.com',$1,$2, true, 1, 'Initial setup of Admin account')  RETURNING id;`
+
+	updateAdminUser = `
+UPDATE go_user
+SET username               = $1,
+    password_hash		 = $2,
+    is_locked              = false,
+    is_admin               = true,
+    last_modification_time = CURRENT_TIMESTAMP,
+    last_modification_user = 1,
+    is_active              = true, 
+	bad_password_count	   = 0  	-- we decide to reset counter 
+WHERE id = 1;
+`
+	groupsCount       = "SELECT COUNT(*) FROM go_group"
+	groupsCreateTable = `
+CREATE TABLE IF NOT EXISTS go_group
+(
+    id        	serial    CONSTRAINT go_group_pk   primary key,
+    name			text	not null	constraint go_group_unique_name	unique
+        constraint name_min_length check (length(btrim(name)) > 2),
+    create_time		timestamp default now() not null,
+    creator			integer	not null,
+    last_modification_time	timestamp,
+    last_modification_user	integer,
+    is_active				boolean default true not null,
+    inactivation_time		timestamp,
+    inactivation_reason    	text,
+    comment                	text
+);
+comment on table go_group is 'go_group contains the list of groups of the GO_USER microservice';
+`
 )
 
 type PGX struct {
@@ -132,24 +164,43 @@ func NewPgxDB(dbConnectionString string, maxConnectionsInPool int, log *log.Logg
 		}
 		log.Printf("SUCCESS: «go_user» table was created rows affected : %v", int(commandTag.RowsAffected()))
 	}
+	var numberOfGroups int
+	errGroupsTable := pgxPool.Conn.QueryRow(context.Background(), groupsCount).Scan(&numberOfGroups)
+	if errGroupsTable != nil {
+		log.Printf("WARNING: problem counting the rows in «go_group» table : %v", errUsersTable)
+		log.Printf("WARNING: 'the database does not contain the table «go_group»  wil try to create it!'")
+		commandTag, err := pgxPool.Conn.Exec(context.Background(), groupsCreateTable)
+		if err != nil {
+			log.Printf("ERROR: problem creating the «go_group» table : %v", err)
+			return nil, errors.New("unable to create the table «go_group» ")
+		}
+		log.Printf("SUCCESS: «go_group» table was created rows affected : %v", int(commandTag.RowsAffected()))
+	}
+
+	adminUser := config.GetAdminUserFromFromEnv("admin")
+	adminPassword, err := config.GetAdminPasswordFromFromEnv()
+	if err != nil {
+		log.Printf("ERROR: 'GetAdminPasswordFromFromEnv returned error : %v'", err)
+		return nil, errors.New("unable to retrieve a valid admin password GetAdminPasswordFromFromEnv")
+	}
+	var lastInsertId int = 0
+	passwordHash := crypto.Sha256Hash(adminPassword)
+	goHash, err := crypto.HashAndSalt(passwordHash)
+	if err != nil {
+		log.Printf("ERROR: crypto.HashAndSalt unexpectedly failed. error : %v", err)
+		return nil, errors.New("unable to calculate hash for the admin password ")
+	}
+
 	if numberOfUsers > 0 {
 		log.Printf("INFO: 'database contains %d records in «go_user»'", numberOfUsers)
-		//TODO: update the password for admin user id=1 with actual env value
+		commandTag, err := pgxPool.Conn.Exec(context.Background(), updateAdminUser, adminUser, goHash)
+		if err != nil {
+			log.Printf("ERROR: updateAdminUser adminUser:(%s) hash : %s unexpectedly failed. error : %v", adminUser, goHash, err)
+			return nil, errors.New("unable to update adminUser in table «go_user» ")
+		}
+		log.Printf("INFO: 'update %d row with admin user %s  in «go_user»'", int(commandTag.RowsAffected()), adminUser)
 	} else {
-		log.Printf("WARNING: '«go_user» contain %d records : creating go-admin user'", numberOfUsers)
-		adminUser := config.GetAdminUserFromFromEnv("admin")
-		adminPassword, err := config.GetAdminPasswordFromFromEnv()
-		if err != nil {
-			log.Printf("ERROR: 'GetAdminPasswordFromFromEnv returned error : %v'", err)
-			return nil, errors.New("unable to retrieve a valid admin password GetAdminPasswordFromFromEnv")
-		}
-		var lastInsertId int = 0
-		passwordHash := crypto.Sha256Hash(adminPassword)
-		goHash, err := crypto.HashAndSalt(passwordHash)
-		if err != nil {
-			log.Printf("ERROR: crypto.HashAndSalt unexpectedly failed. error : %v", err)
-			return nil, errors.New("unable to calculate hash for the admin password ")
-		}
+		log.Printf("WARNING: '«go_user» contain %d records : creating initial admin user: %s'", numberOfUsers, adminUser)
 		err = pgxPool.Conn.QueryRow(context.Background(), insertAdminUser, adminUser, goHash).Scan(&lastInsertId)
 		if err != nil {
 			log.Printf("ERROR: insertAdminUser adminUser:(%s) hash : %s unexpectedly failed. error : %v", adminUser, goHash, err)
@@ -180,7 +231,7 @@ func (db *PGX) Create(u User) (*User, error) {
 	}
 	u.PasswordHash = goHash
 	err = db.Db.Conn.QueryRow(context.Background(), usersCreate,
-		u.Name, u.Email, u.Username, u.PasswordHash, &u.ExternalId, &u.Enterprise, &u.Phone, //$1-$7
+		u.Name, u.Email, u.Username, u.PasswordHash, &u.ExternalId, &u.OrgunitId, &u.Phone, //$1-$7
 		u.IsAdmin, u.Creator, &u.Comment).Scan(&lastInsertId)
 	if err != nil {
 		db.log.Printf("error : Create(%q) unexpectedly failed. error : %v", u.Name, err)
@@ -297,7 +348,7 @@ func (db *PGX) Update(id int32, user User) (*User, error) {
 	db.log.Printf("info : just before Update(%+v)", user)
 	rowsAffected, err = db.Db.ExecActionQuery(usersUpdate,
 		user.Name, user.Email, user.Username,
-		&user.Enterprise, &user.Phone, user.IsLocked, user.IsAdmin, user.LastModificationUser,
+		&user.OrgunitId, &user.Phone, user.IsLocked, user.IsAdmin, user.LastModificationUser,
 		user.IsActive, &user.InactivationTime, &user.InactivationReason, &user.Comment, user.ExternalId, id)
 	if err != nil {
 		return nil, GetErrorF("error: Update() query failed", err)
@@ -348,7 +399,7 @@ func (db *PGX) Close() {
 
 func (db *PGX) IsUserAdmin(idUser int32) bool {
 	var isAdmin bool
-	isAdmin, err := db.Db.GetQueryBool("SELECT is_admin FROM go_users WHERE id = $1", idUser)
+	isAdmin, err := db.Db.GetQueryBool("SELECT is_admin FROM go_user WHERE id = $1", idUser)
 	if err != nil {
 		db.log.Printf("error: IsUserAdmin(%d) could not be retrieved from DB. failed db.Query err: %v", idUser, err)
 		return false

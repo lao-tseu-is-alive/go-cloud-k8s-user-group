@@ -19,10 +19,10 @@
           <Toast position="top-center" />
           <FeedBack ref="feedback" :msg="feedbackMsg" :msg-type="feedbackType" :visible="feedbackVisible" />
           <template v-if="isUserAuthenticated ">
-            <template v-if="getUserIsAdmin">
+            <template v-if="isUserAdmin">
               <ListUsers :display="isUserAuthenticated" />
             </template>
-            <h2>Connexion de {{ getUserLogin() }} [{{ getUserEmail() }}]</h2>
+            <h4>Connexion de {{ getUserLogin() }} [{{ getUserEmail() }}]</h4>
           </template>
           <template v-else>
             <LoginUser
@@ -59,6 +59,7 @@ import ListUsers from './components/ListUsers.vue';
 
 const log = getLog(APP, 4, 2);
 const isUserAuthenticated = ref(false);
+const isUserAdmin = ref(false);
 const isNetworkOk = ref(true);
 const feedback = ref(null);
 const feedbackMsg = ref(`${APP_TITLE}, v.${VERSION}`);
@@ -87,6 +88,7 @@ const logout = () => {
   log.t('# IN logout()');
   clearSessionStorage();
   isUserAuthenticated.value = false;
+  isUserAdmin.value = false;
   displayFeedBack('Vous vous êtes déconnecté de l\'application avec succès !', 'success');
   if (isNullOrUndefined(autoLogoutTimer)) {
     clearInterval(autoLogoutTimer);
@@ -120,11 +122,13 @@ const checkIsSessionTokenValid = () => {
           if (isNullOrUndefined(val.err) && (val.status === 200)) {
             // everything is okay, session is still valid
             isUserAuthenticated.value = true;
+            isUserAdmin.value = getUserIsAdmin();
             return;
           }
           if (val.status === 401) {
             // jwt token is no more valid
             isUserAuthenticated.value = false;
+            isUserAdmin.value = false;
             displayFeedBack('Votre session a expiré !', 'warn');
             logout();
           }
@@ -143,6 +147,7 @@ const checkIsSessionTokenValid = () => {
 const loginSuccess = (v) => {
   log.t(' loginSuccess()', v);
   isUserAuthenticated.value = true;
+  isUserAdmin.value = getUserIsAdmin();
   feedbackVisible.value = false;
   if (isNullOrUndefined(autoLogoutTimer)) {
     // check every 60 seconds(60'000 milliseconds) if jwt is still valid
@@ -153,6 +158,7 @@ const loginSuccess = (v) => {
 const loginFailure = (v) => {
   log.w('loginFailure()', v);
   isUserAuthenticated.value = false;
+  isUserAdmin.value = false;
 };
 
 onMounted(() => {

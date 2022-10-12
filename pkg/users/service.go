@@ -28,13 +28,25 @@ type JwtCustomClaims struct {
 	IsAdmin  bool   `json:"is_admin"`
 }
 
-// UsersCreate will store the NewUser task in the store
+// UsersCreate will store a new User in the store
 /* to test it with curl you can try :
 curl -s -XPOST -H "Content-Type: application/json" -H "Authorization: Bearer $token" \
 -d '{"username":"cgil", "name":"Carlos GIL", "email":"c@gil.town", "password_hash":"4acf0b39d9c4766709a3689f553ac01ab550545ffa4544dfc0b2cea82fba02a3"}'  'http://localhost:8888/api/users'
 */
 func (s Service) UsersCreate(ctx echo.Context) error {
 	s.Log.Println("trace: entering CreateUser()")
+	// get the current user from JWT TOKEN
+	u := ctx.Get("jwtdata").(*jwt.Token)
+	claims := JwtCustomClaims{}
+	err := u.DecodeClaims(&claims)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, err)
+	}
+	// IF USER IS NOT ADMIN RETURN 401 Unauthorized
+	currentUserId := claims.Id
+	if !s.Store.IsUserAdmin(currentUserId) {
+		return echo.NewHTTPError(http.StatusUnauthorized, "current user has no admin privilege")
+	}
 	/* uncomment when jw is implemented
 	// get the current user from JWT TOKEN
 	user := ctx.Get("user").(*jwt.Token)
@@ -45,7 +57,6 @@ func (s Service) UsersCreate(ctx echo.Context) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "current user has no admin privilege")
 	}
 	*/
-	currentUserId := 1
 	newUser := &User{
 		Id:      0,
 		Creator: int32(currentUserId),
@@ -56,13 +67,13 @@ func (s Service) UsersCreate(ctx echo.Context) error {
 	if len(newUser.Name) < 1 {
 		return ctx.JSON(http.StatusBadRequest, fmt.Sprint("CreateUser name cannot be empty"))
 	}
-	if len(newUser.Name) < 6 {
+	if len(newUser.Name) < 5 {
 		return ctx.JSON(http.StatusBadRequest, fmt.Sprint("CreateUser name minLength is 5"))
 	}
 	if len(newUser.Username) < 1 {
 		return ctx.JSON(http.StatusBadRequest, fmt.Sprint("CreateUser username cannot be empty"))
 	}
-	if len(newUser.Username) < 6 {
+	if len(newUser.Username) < 5 {
 		return ctx.JSON(http.StatusBadRequest, fmt.Sprint("CreateUser username minLength is 5"))
 	}
 	if !crypto.ValidatePasswordHash(newUser.PasswordHash) {
@@ -97,6 +108,18 @@ func (s Service) GetMaxId(ctx echo.Context) error {
 // curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $token" 'http://localhost:8888/api/users' |jq
 func (s Service) UsersGet(ctx echo.Context, userId int32) error {
 	s.Log.Printf("trace: entering GetUser(%d)", userId)
+	// get the current user from JWT TOKEN
+	u := ctx.Get("jwtdata").(*jwt.Token)
+	claims := JwtCustomClaims{}
+	err := u.DecodeClaims(&claims)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, err)
+	}
+	currentUserId := claims.Id
+	// IF USER IS NOT ADMIN RETURN 401 Unauthorized IF GET is for ANOTHER id
+	if !s.Store.IsUserAdmin(currentUserId) && currentUserId != userId {
+		return echo.NewHTTPError(http.StatusUnauthorized, "current user has no admin privilege")
+	}
 	if s.Store.Exist(userId) == false {
 		msg := fmt.Sprintf("GetUser(%d) this id does not exist.", userId)
 		s.Log.Printf(msg)
@@ -114,6 +137,18 @@ func (s Service) UsersGet(ctx echo.Context, userId int32) error {
 // curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $token" 'http://localhost:8888/api/users' |jq
 func (s Service) UsersList(ctx echo.Context, params UsersListParams) error {
 	s.Log.Printf("trace: entering GetUsers() params:%v", params)
+	// get the current user from JWT TOKEN
+	u := ctx.Get("jwtdata").(*jwt.Token)
+	claims := JwtCustomClaims{}
+	err := u.DecodeClaims(&claims)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, err)
+	}
+	// IF USER IS NOT ADMIN RETURN 401 Unauthorized
+	currentUserId := claims.Id
+	if !s.Store.IsUserAdmin(currentUserId) {
+		return echo.NewHTTPError(http.StatusUnauthorized, "current user has no admin privilege")
+	}
 	list, err := s.Store.List(0, 100)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("there was a problem when calling store.List :%v", err))
@@ -126,6 +161,18 @@ func (s Service) UsersList(ctx echo.Context, params UsersListParams) error {
 // curl -v -XDELETE -H "Content-Type: application/json"  -H "Authorization: Bearer $token" 'http://localhost:8888/users/93333' -> 400 Bad Request
 func (s Service) UsersDelete(ctx echo.Context, userId int32) error {
 	s.Log.Printf("trace: entering DeleteUser(%d)", userId)
+	// get the current user from JWT TOKEN
+	u := ctx.Get("jwtdata").(*jwt.Token)
+	claims := JwtCustomClaims{}
+	err := u.DecodeClaims(&claims)
+	if err != nil {
+		return ctx.JSON(http.StatusInternalServerError, err)
+	}
+	// IF USER IS NOT ADMIN RETURN 401 Unauthorized
+	currentUserId := claims.Id
+	if !s.Store.IsUserAdmin(currentUserId) {
+		return echo.NewHTTPError(http.StatusUnauthorized, "current user has no admin privilege")
+	}
 	/* uncomment when jw is implemented
 	// get the current user from JWT TOKEN
 	user := ctx.Get("user").(*jwt.Token)
@@ -185,6 +232,15 @@ func (s Service) UsersUpdate(ctx echo.Context, userId int32) error {
 	t.LastModificationUser = &currentUserId
 	if len(t.Name) < 1 {
 		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprint("UsersUpdate username cannot be empty"))
+	}
+	if len(t.Name) < 5 {
+		return ctx.JSON(http.StatusBadRequest, fmt.Sprint("UsersUpdate name minLength is 5"))
+	}
+	if len(t.Username) < 1 {
+		return ctx.JSON(http.StatusBadRequest, fmt.Sprint("UsersUpdate username cannot be empty"))
+	}
+	if len(t.Username) < 5 {
+		return ctx.JSON(http.StatusBadRequest, fmt.Sprint("UsersUpdate username minLength is 5"))
 	}
 	//refuse an attempt to modify a userId (in url) with a different id in the body !
 	if t.Id != userId {

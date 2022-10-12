@@ -141,6 +141,7 @@ const timeToDisplaySucces = 4000;
 
 const log = getLog(moduleName, 4, 2);
 const loadedData = ref(false);
+const loadingData = ref(false);
 const userDialog = ref(false);
 const deleteUserDialog = ref(false);
 const submitted = ref(false);
@@ -179,23 +180,29 @@ const props = defineProps({
 });
 
 const getNumUsers = computed(() => {
+  const method = 'getNumUsers';
+  log.t(`##-->${moduleName}::${method}()`);
   if ((props.display === undefined) || props.display === false) {
     return 0;
   }
-  if ((isNullOrUndefined(dataUsers.value)) || dataUsers.value.length < 2) {
+  if (loadedData.value) {
+    return dataUsers.value.length;
+  } if ((isNullOrUndefined(dataUsers.value)) || dataUsers.value.length < 1 || !loadingData.value) {
     user.getList((data, errMessage) => {
       if (!isNullOrUndefined(data)) {
         dataUsers.value = data;
-        log.l('# IN loadData -> objet data :', dataUsers.value);
+        log.l(`# IN loadData -> dataUsers.value.length : ${dataUsers.value.length}`);
         loadedData.value = true;
+        loadingData.value = false;
         return dataUsers.value.length;
       }
       log.e(`# GOT ERROR IN loadData() in callback for user.getList data: ${errMessage}`);
       loadedData.value = false;
+      loadingData.value = false;
       return 0;
     });
   }
-  return dataUsers.value.length;
+  return 0;
 });
 
 const findIndexById = (id) => {
@@ -263,7 +270,7 @@ const saveUser = () => {
       isNewUser.value = true;
       const tempUser = { ...dataCurrentUser.value };
       tempUser.id = 0;
-      tempUser.password_hash = `${getPasswordHash(dataCurrentUser.value.password_hash)}`;
+      tempUser.password_hash = `${getPasswordHash(dataCurrentUser.value.password)}`;
       user.newUser(tempUser, (retval, errorMsg) => {
         if (errorMsg === 'SUCCESS') {
           log.w('# in saveDialog callback for user.newUser call val', retval);
@@ -309,8 +316,10 @@ const confirmDeleteUser = (currentUser) => {
   log.t(`##-->${moduleName}::${method}`);
   if (currentUser.id === getUserId()) {
     toast.add({
-      severity: 'error', summary: 'Error', detail: `⚡⚡⚠ You cannot erase your own account ! User id: [${currentUser.value.id} `, life: timeToDisplayError,
+      severity: 'error', summary: 'Error', detail: `⚡⚡⚠ You cannot erase your own account ! User id: [${currentUser.id} `, life: timeToDisplayError,
     });
+    dataCurrentUser.value = defaultUser;
+    deleteUserDialog.value = false;
     return;
   }
   dataCurrentUser.value = currentUser;

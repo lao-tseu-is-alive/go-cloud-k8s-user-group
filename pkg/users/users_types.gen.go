@@ -19,19 +19,6 @@ type Error struct {
 	Message string `json:"message"`
 }
 
-// NewUser defines model for NewUser.
-type NewUser struct {
-	Comment      *string `json:"comment,omitempty"`
-	Email        string  `json:"email"`
-	Enterprise   *string `json:"enterprise,omitempty"`
-	ExternalId   *string `json:"external_id,omitempty"`
-	IsAdmin      bool    `json:"is_admin"`
-	Name         string  `json:"name"`
-	PasswordHash string  `json:"password_hash"`
-	Phone        *string `json:"phone,omitempty"`
-	Username     string  `json:"username"`
-}
-
 // User defines model for User.
 type User struct {
 	BadPasswordCount     int32               `json:"bad_password_count"`
@@ -39,8 +26,8 @@ type User struct {
 	CreateTime           time.Time           `json:"create_time"`
 	Creator              int32               `json:"creator"`
 	Email                openapi_types.Email `json:"email"`
-	Enterprise           *string             `json:"enterprise,omitempty"`
-	ExternalId           *string             `json:"external_id,omitempty"`
+	ExternalId           *int32              `json:"external_id,omitempty"`
+	GroupsId             *[]int32            `json:"groups_id,omitempty"`
 	Id                   int32               `json:"id"`
 	InactivationReason   *string             `json:"inactivation_reason,omitempty"`
 	InactivationTime     *time.Time          `json:"inactivation_time,omitempty"`
@@ -50,6 +37,7 @@ type User struct {
 	LastModificationTime *time.Time          `json:"last_modification_time,omitempty"`
 	LastModificationUser *int32              `json:"last_modification_user,omitempty"`
 	Name                 string              `json:"name"`
+	OrgunitId            *int32              `json:"orgunit_id,omitempty"`
 	PasswordHash         string              `json:"password_hash"`
 	Phone                *string             `json:"phone,omitempty"`
 	Username             string              `json:"username"`
@@ -61,6 +49,7 @@ type UserList struct {
 	Creator    int32               `json:"creator"`
 	Email      openapi_types.Email `json:"email"`
 	Id         int32               `json:"id"`
+	IsActive   bool                `json:"is_active"`
 	IsAdmin    bool                `json:"is_admin"`
 	IsLocked   bool                `json:"is_locked"`
 	Name       string              `json:"name"`
@@ -80,7 +69,7 @@ type UsersListParams struct {
 }
 
 // UsersCreateJSONBody defines parameters for UsersCreate.
-type UsersCreateJSONBody = NewUser
+type UsersCreateJSONBody = User
 
 // UsersCreateJSONRequestBody defines body for UsersCreate for application/json ContentType.
 type UsersCreateJSONRequestBody = UsersCreateJSONBody
