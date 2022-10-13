@@ -133,17 +133,30 @@ func NewGoHttpServer(listenAddress string, l *log.Logger, store users.Storage, w
 				return nil, err
 			}
 			/*
-				fmt.Printf("Algorithm %v\n", token.Header().Algorithm)
-				fmt.Printf("Type      %v\n", token.Header().Type)
-				fmt.Printf("Claims    %v\n", string(token.Claims()))
-				fmt.Printf("Payload   %v\n", string(token.PayloadPart()))
-				fmt.Printf("Token     %v\n", string(token.Bytes()))
+				l.Printf("Algorithm %v\n", token.Header().Algorithm)
+				l.Printf("Type      %v\n", token.Header().Type)
+				l.Printf("Claims    %v\n", string(token.Claims()))
+				l.Printf("Payload   %v\n", string(token.PayloadPart()))
+				l.Printf("Token     %v\n", string(token.Bytes()))
 			*/
+			l.Printf("ParseTokenFunc : Claims:    %+v\n", string(token.Claims()))
 			if newClaims.IsValidAt(time.Now()) {
-				return token, nil
+				claims := users.JwtCustomClaims{}
+				err := token.DecodeClaims(&claims)
+				if err != nil {
+					return nil, errors.New("token cannot be parsed")
+				}
+				// IF USER IS DEACTIVATED  token should be invalidated RETURN 401 Unauthorized
+				currentUserId := claims.Id
+				if store.IsUserActive(currentUserId) {
+					return token, nil // ALL IS GOOD HERE
+				}
+				//l.Printf("💥💥 ERROR: 'in  content.ReadFile(%s) got error: %v'\n", errorPage, err)
+				return nil, errors.New("token invalid because user account has been deactivated")
 			} else {
 				return nil, errors.New("token has expired")
 			}
+
 		},
 	}
 	r.Use(middleware.JWTWithConfig(config))

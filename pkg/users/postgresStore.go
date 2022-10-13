@@ -397,6 +397,7 @@ func (db *PGX) Close() {
 	db.Db.Close()
 }
 
+// IsUserAdmin returns true if the user with the specified id has the is_admin attribute set to true
 func (db *PGX) IsUserAdmin(idUser int32) bool {
 	var isAdmin bool
 	isAdmin, err := db.Db.GetQueryBool("SELECT is_admin FROM go_user WHERE id = $1", idUser)
@@ -405,7 +406,17 @@ func (db *PGX) IsUserAdmin(idUser int32) bool {
 		return false
 	}
 	return isAdmin
+}
 
+// IsUserActive returns true if the user with the specified id has the is_active attribute set to true
+func (db *PGX) IsUserActive(idUser int32) bool {
+	var isActive bool
+	isActive, err := db.Db.GetQueryBool("SELECT is_active FROM go_user WHERE id = $1", idUser)
+	if err != nil {
+		db.log.Printf("error: IsUserActive(%d) could not be retrieved from DB. failed db.Query err: %v", idUser, err)
+		return false
+	}
+	return isActive
 }
 
 // ResetPassword the user password stored in DB for given id

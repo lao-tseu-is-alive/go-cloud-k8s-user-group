@@ -38,6 +38,8 @@ type Storage interface {
 	Close()
 	// IsUserAdmin returns true if the user with the specified id has the is_admin attribute set to true
 	IsUserAdmin(id int32) bool
+	// IsUserActive returns true if the user with the specified id has the is_active attribute set to true
+	IsUserActive(id int32) bool
 }
 
 func GetStorageInstance(dbDriver, dbConnectionString string, log *log.Logger) (Storage, error) {
