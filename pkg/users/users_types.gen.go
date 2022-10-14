@@ -19,6 +19,27 @@ type Error struct {
 	Message string `json:"message"`
 }
 
+// Group defines model for Group.
+type Group struct {
+	Comment              *string    `json:"comment,omitempty"`
+	CreateTime           time.Time  `json:"create_time"`
+	Creator              int32      `json:"creator"`
+	Id                   int32      `json:"id"`
+	InactivationReason   *string    `json:"inactivation_reason,omitempty"`
+	InactivationTime     *time.Time `json:"inactivation_time,omitempty"`
+	IsActive             bool       `json:"is_active"`
+	LastModificationTime *time.Time `json:"last_modification_time,omitempty"`
+	LastModificationUser *int32     `json:"last_modification_user,omitempty"`
+	Name                 string     `json:"name"`
+}
+
+// GroupList defines model for GroupList.
+type GroupList struct {
+	Id       int32  `json:"id"`
+	IsActive bool   `json:"is_active"`
+	Name     string `json:"name"`
+}
+
 // User defines model for User.
 type User struct {
 	BadPasswordCount     int32               `json:"bad_password_count"`
@@ -62,14 +83,26 @@ type UserLogin struct {
 	Username     string `json:"username"`
 }
 
-// UsersListParams defines parameters for UsersList.
-type UsersListParams struct {
+// GroupListParams defines parameters for GroupList.
+type GroupListParams struct {
 	// maximum number of results to return
 	Limit *int32 `form:"limit,omitempty" json:"limit,omitempty"`
 }
 
-// UsersCreateJSONBody defines parameters for UsersCreate.
-type UsersCreateJSONBody = User
+// GroupCreateJSONBody defines parameters for GroupCreate.
+type GroupCreateJSONBody = Group
 
-// UsersCreateJSONRequestBody defines body for UsersCreate for application/json ContentType.
-type UsersCreateJSONRequestBody = UsersCreateJSONBody
+// UserListParams defines parameters for UserList.
+type UserListParams struct {
+	// maximum number of results to return
+	Limit *int32 `form:"limit,omitempty" json:"limit,omitempty"`
+}
+
+// UserCreateJSONBody defines parameters for UserCreate.
+type UserCreateJSONBody = User
+
+// GroupCreateJSONRequestBody defines body for GroupCreate for application/json ContentType.
+type GroupCreateJSONRequestBody = GroupCreateJSONBody
+
+// UserCreateJSONRequestBody defines body for UserCreate for application/json ContentType.
+type UserCreateJSONRequestBody = UserCreateJSONBody

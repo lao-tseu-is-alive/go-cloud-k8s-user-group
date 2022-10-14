@@ -28,12 +28,12 @@ type JwtCustomClaims struct {
 	IsAdmin  bool   `json:"is_admin"`
 }
 
-// UsersCreate will store a new User in the store
+// UserCreate will store a new User in the store
 /* to test it with curl you can try :
 curl -s -XPOST -H "Content-Type: application/json" -H "Authorization: Bearer $token" \
 -d '{"username":"cgil", "name":"Carlos GIL", "email":"c@gil.town", "password_hash":"4acf0b39d9c4766709a3689f553ac01ab550545ffa4544dfc0b2cea82fba02a3"}'  'http://localhost:8888/api/users'
 */
-func (s Service) UsersCreate(ctx echo.Context) error {
+func (s Service) UserCreate(ctx echo.Context) error {
 	s.Log.Println("trace: entering CreateUser()")
 	// get the current user from JWT TOKEN
 	u := ctx.Get("jwtdata").(*jwt.Token)
@@ -103,10 +103,10 @@ func (s Service) GetMaxId(ctx echo.Context) error {
 	return ctx.JSON(http.StatusOK, maxUserId)
 }
 
-// UsersGet will retrieve the User in the store and return then
+// UserGet will retrieve the User in the store and return then
 // to test it with curl you can try :
 // curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $token" 'http://localhost:8888/api/users' |jq
-func (s Service) UsersGet(ctx echo.Context, userId int32) error {
+func (s Service) UserGet(ctx echo.Context, userId int32) error {
 	s.Log.Printf("trace: entering GetUser(%d)", userId)
 	// get the current user from JWT TOKEN
 	u := ctx.Get("jwtdata").(*jwt.Token)
@@ -121,7 +121,7 @@ func (s Service) UsersGet(ctx echo.Context, userId int32) error {
 		return echo.NewHTTPError(http.StatusUnauthorized, "current user has no admin privilege")
 	}
 	if s.Store.Exist(userId) == false {
-		msg := fmt.Sprintf("GetUser(%d) this id does not exist.", userId)
+		msg := fmt.Sprintf("UserGet(%d) this id does not exist.", userId)
 		s.Log.Printf(msg)
 		return ctx.JSON(http.StatusNotFound, msg)
 	}
@@ -132,22 +132,17 @@ func (s Service) UsersGet(ctx echo.Context, userId int32) error {
 	return ctx.JSON(http.StatusOK, user)
 }
 
-// UsersList will retrieve all Users in the store and return then
+// UserList will retrieve all Users in the store and return then
 // to test it with curl you can try :
 // curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $token" 'http://localhost:8888/api/users' |jq
-func (s Service) UsersList(ctx echo.Context, params UsersListParams) error {
-	s.Log.Printf("trace: entering GetUsers() params:%v", params)
+func (s Service) UserList(ctx echo.Context, params UserListParams) error {
+	s.Log.Printf("trace: entering UsersList() params:%v", params)
 	// get the current user from JWT TOKEN
 	u := ctx.Get("jwtdata").(*jwt.Token)
 	claims := JwtCustomClaims{}
 	err := u.DecodeClaims(&claims)
 	if err != nil {
 		return ctx.JSON(http.StatusInternalServerError, err)
-	}
-	// IF USER IS NOT ADMIN RETURN 401 Unauthorized
-	currentUserId := claims.Id
-	if !s.Store.IsUserAdmin(currentUserId) {
-		return echo.NewHTTPError(http.StatusUnauthorized, "current user has no admin privilege")
 	}
 	list, err := s.Store.List(0, 100)
 	if err != nil {
@@ -156,10 +151,10 @@ func (s Service) UsersList(ctx echo.Context, params UsersListParams) error {
 	return ctx.JSON(http.StatusOK, list)
 }
 
-// UsersDelete will remove the given userID entry from the store, and if not present will return 400 Bad Request
+// UserDelete will remove the given userID entry from the store, and if not present will return 400 Bad Request
 // curl -v -XDELETE -H "Content-Type: application/json" -H "Authorization: Bearer $token" 'http://localhost:8888/api/users/3' ->  204 No Content if present and delete it
 // curl -v -XDELETE -H "Content-Type: application/json"  -H "Authorization: Bearer $token" 'http://localhost:8888/users/93333' -> 400 Bad Request
-func (s Service) UsersDelete(ctx echo.Context, userId int32) error {
+func (s Service) UserDelete(ctx echo.Context, userId int32) error {
 	s.Log.Printf("trace: entering DeleteUser(%d)", userId)
 	// get the current user from JWT TOKEN
 	u := ctx.Get("jwtdata").(*jwt.Token)
@@ -203,10 +198,10 @@ func (s Service) UsersDelete(ctx echo.Context, userId int32) error {
 	}
 }
 
-// UsersUpdate will store the modified information in the store for the given userId
+// UserUpdate will store the modified information in the store for the given userId
 // curl -v -XPUT -H "Content-Type: application/json" -d '{"id": 3, "task":"learn Linux", "completed": true}'  'http://localhost:8888/users/3'
 // curl -v -XPUT -H "Content-Type: application/json" -d '{"id": 3, "task":"learn Linux", "completed": false}'  'http://localhost:8888/users/3'
-func (s Service) UsersUpdate(ctx echo.Context, userId int32) error {
+func (s Service) UserUpdate(ctx echo.Context, userId int32) error {
 	s.Log.Printf("trace: entering UpdateUser(%d)", userId)
 	// get the current user from JWT TOKEN
 	u := ctx.Get("jwtdata").(*jwt.Token)
@@ -231,7 +226,7 @@ func (s Service) UsersUpdate(ctx echo.Context, userId int32) error {
 	}
 	t.LastModificationUser = &currentUserId
 	if len(t.Name) < 1 {
-		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprint("UsersUpdate username cannot be empty"))
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprint("UsersUpdate name cannot be empty"))
 	}
 	if len(t.Name) < 5 {
 		return ctx.JSON(http.StatusBadRequest, fmt.Sprint("UsersUpdate name minLength is 5"))
@@ -255,9 +250,9 @@ func (s Service) UsersUpdate(ctx echo.Context, userId int32) error {
 	return ctx.JSON(http.StatusOK, updatedUser)
 }
 
-// UsersChangePassword allows a user to change it's own password
+// UserChangePassword allows a user to change it's own password
 // (PUT /api/users/{userId}/changepassword)
-func (s Service) UsersChangePassword(ctx echo.Context, userId int32) error {
+func (s Service) UserChangePassword(ctx echo.Context, userId int32) error {
 	s.Log.Printf("trace: entering ChangeUserPassword(%d)", userId)
 	//TODO implement me
 	panic("implement me")

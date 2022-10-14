@@ -12,7 +12,7 @@
       "name": "Apache 2.0",
       "url": "https://www.apache.org/licenses/LICENSE-2.0.html"
     },
-    "version": "0.1.3"
+    "version": "0.1.4"
   },
   "servers": [
     {
@@ -22,9 +22,9 @@
   "paths": {
     "/users": {
       "get": {
-        "summary": "UsersList returns a list of users",
-        "description": "Returns the user's in an array",
-        "operationId": "UsersList",
+        "summary": "UserList returns a list of users",
+        "description": "Returns the users in an array",
+        "operationId": "UserList",
         "parameters": [
           {
             "name": "limit",
@@ -74,9 +74,9 @@
         ]
       },
       "post": {
-        "summary": "UsersCreate will create a new user",
+        "summary": "UserCreate will create a new user",
         "description": "Creates a new user",
-        "operationId": "UsersCreate",
+        "operationId": "UserCreate",
         "requestBody": {
           "description": "User to add",
           "content": {
@@ -122,9 +122,9 @@
     },
     "/users/{userId}": {
       "get": {
-        "summary": "UsersGet will retrieve in backend all information about a specific userId",
+        "summary": "UserGet will retrieve in backend all information about a specific userId",
         "description": "Retrieve a specific user",
-        "operationId": "UsersGet",
+        "operationId": "UserGet",
         "parameters": [
           {
             "name": "userId",
@@ -141,7 +141,7 @@
         ],
         "responses": {
           "200": {
-            "description": "get user's successful response",
+            "description": "get user successful response",
             "content": {
               "application/json": {
                 "schema": {
@@ -154,7 +154,7 @@
             "description": "Access token is missing or invalid"
           },
           "404": {
-            "description": "get user's response when userId was not found"
+            "description": "get users response when userId was not found"
           },
           "default": {
             "description": "unexpected error",
@@ -174,9 +174,9 @@
         ]
       },
       "put": {
-        "summary": "UsersUpdate allows to modify information about a specific userId",
+        "summary": "UserUpdate allows to modify information about a specific userId",
         "description": "Updates the status of a user",
-        "operationId": "UsersUpdate",
+        "operationId": "UserUpdate",
         "parameters": [
           {
             "name": "userId",
@@ -192,7 +192,7 @@
           }
         ],
         "requestBody": {
-          "description": "status of the user",
+          "description": "informations related to the user",
           "content": {
             "application/x-www-form-urlencoded": {
               "schema": {
@@ -203,7 +203,7 @@
         },
         "responses": {
           "200": {
-            "description": "put user's successful response",
+            "description": "put users successful response",
             "content": {
               "application/json": {
                 "schema": {
@@ -216,7 +216,7 @@
             "description": "Access token is missing or invalid"
           },
           "404": {
-            "description": "put user's response when userId was not found"
+            "description": "put users response when userId was not found"
           },
           "default": {
             "description": "unexpected error",
@@ -236,9 +236,9 @@
         ]
       },
       "delete": {
-        "summary": "UsersDelete allows to delete a specific userId",
+        "summary": "UserDelete allows to delete a specific userId",
         "description": "delete a user",
-        "operationId": "UsersDelete",
+        "operationId": "UserDelete",
         "parameters": [
           {
             "name": "userId",
@@ -255,13 +255,13 @@
         ],
         "responses": {
           "204": {
-            "description": "delete user's successful no content"
+            "description": "delete user successful no content"
           },
           "401": {
             "description": "Access token is missing or invalid"
           },
           "404": {
-            "description": "delete user's response when userId was not found"
+            "description": "delete user response when userId was not found"
           },
           "default": {
             "description": "unexpected error",
@@ -283,9 +283,9 @@
     },
     "/users/{userId}/changepassword": {
       "put": {
-        "summary": "UsersChangePassword allows a user to change it's own password",
+        "summary": "UserChangePassword allows a user to change it's own password",
         "description": "allows a logged in user with a valid JWT to reset is own user password",
-        "operationId": "UsersChangePassword",
+        "operationId": "UserChangePassword",
         "parameters": [
           {
             "name": "userId",
@@ -325,7 +325,268 @@
             "description": "Access token is missing or invalid"
           },
           "404": {
-            "description": "put user's response when userId was not found"
+            "description": "put user response when userId was not found"
+          },
+          "default": {
+            "description": "unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    },
+    "/groups": {
+      "get": {
+        "summary": "GroupList returns a list of groups",
+        "description": "Returns the groups in an array",
+        "operationId": "GroupList",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "description": "maximum number of results to return",
+            "required": false,
+            "style": "form",
+            "explode": true,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "get List of groups response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/GroupList"
+                  }
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Access token is missing or invalid"
+          },
+          "default": {
+            "description": "unexpected Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      },
+      "post": {
+        "summary": "GroupCreate will create a new group",
+        "description": "Creates a new group",
+        "operationId": "GroupCreate",
+        "requestBody": {
+          "description": "Group to add",
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/Group"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "description": "Group creation response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Group"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Access token is missing or invalid"
+          },
+          "default": {
+            "description": "unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      }
+    },
+    "/groups/{groupId}": {
+      "get": {
+        "summary": "GroupGet will retrieve in backend all information about a specific groupId",
+        "description": "Retrieve a specific group",
+        "operationId": "GroupGet",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "description": "Id of the group",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "get group successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Group"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Access token is missing or invalid"
+          },
+          "404": {
+            "description": "get group response when groupId was not found"
+          },
+          "default": {
+            "description": "unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      },
+      "put": {
+        "summary": "GroupUpdate allows to modify information about a specific groupId",
+        "description": "Updates the informations related to a group",
+        "operationId": "GroupUpdate",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "description": "Id of the group",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "requestBody": {
+          "description": "informations related to the group",
+          "content": {
+            "application/x-www-form-urlencoded": {
+              "schema": {
+                "$ref": "#/components/schemas/Group"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "put group successful response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Group"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Access token is missing or invalid"
+          },
+          "404": {
+            "description": "put group response when userId was not found"
+          },
+          "default": {
+            "description": "unexpected error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/Error"
+                }
+              }
+            }
+          }
+        },
+        "security": [
+          {
+            "JWTAuth": []
+          }
+        ]
+      },
+      "delete": {
+        "summary": "GroupDelete allows to delete a specific groupId",
+        "description": "delete a group",
+        "operationId": "GroupDelete",
+        "parameters": [
+          {
+            "name": "groupId",
+            "in": "path",
+            "description": "Id of the group",
+            "required": true,
+            "style": "simple",
+            "explode": false,
+            "schema": {
+              "type": "integer",
+              "format": "int32"
+            }
+          }
+        ],
+        "responses": {
+          "204": {
+            "description": "delete group successful no content"
+          },
+          "401": {
+            "description": "Access token is missing or invalid"
+          },
+          "404": {
+            "description": "delete group response when groupId was not found"
           },
           "default": {
             "description": "unexpected error",
@@ -513,6 +774,78 @@
           "create_time": {
             "type": "string",
             "format": "date-time"
+          }
+        }
+      },
+      "Group": {
+        "required": [
+          "create_time",
+          "creator",
+          "id",
+          "is_active",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "minLength": 2,
+            "type": "string"
+          },
+          "create_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "creator": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "last_modification_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "last_modification_user": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "is_active": {
+            "type": "boolean",
+            "default": true
+          },
+          "inactivation_time": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "inactivation_reason": {
+            "type": "string"
+          },
+          "comment": {
+            "type": "string"
+          }
+        }
+      },
+      "GroupList": {
+        "required": [
+          "id",
+          "is_active",
+          "name"
+        ],
+        "type": "object",
+        "properties": {
+          "id": {
+            "type": "integer",
+            "format": "int32"
+          },
+          "name": {
+            "minLength": 2,
+            "type": "string"
+          },
+          "is_active": {
+            "type": "boolean",
+            "default": true
           }
         }
       },

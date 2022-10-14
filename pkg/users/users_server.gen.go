@@ -13,24 +13,39 @@ import (
 
 // ServerInterface represents all server handlers.
 type ServerInterface interface {
-	// UsersList returns a list of users
+	// GroupList returns a list of groups
+	// (GET /groups)
+	GroupList(ctx echo.Context, params GroupListParams) error
+	// GroupCreate will create a new group
+	// (POST /groups)
+	GroupCreate(ctx echo.Context) error
+	// GroupDelete allows to delete a specific groupId
+	// (DELETE /groups/{groupId})
+	GroupDelete(ctx echo.Context, groupId int32) error
+	// GroupGet will retrieve in backend all information about a specific groupId
+	// (GET /groups/{groupId})
+	GroupGet(ctx echo.Context, groupId int32) error
+	// GroupUpdate allows to modify information about a specific groupId
+	// (PUT /groups/{groupId})
+	GroupUpdate(ctx echo.Context, groupId int32) error
+	// UserList returns a list of users
 	// (GET /users)
-	UsersList(ctx echo.Context, params UsersListParams) error
-	// UsersCreate will create a new user
+	UserList(ctx echo.Context, params UserListParams) error
+	// UserCreate will create a new user
 	// (POST /users)
-	UsersCreate(ctx echo.Context) error
-	// UsersDelete allows to delete a specific userId
+	UserCreate(ctx echo.Context) error
+	// UserDelete allows to delete a specific userId
 	// (DELETE /users/{userId})
-	UsersDelete(ctx echo.Context, userId int32) error
-	// UsersGet will retrieve in backend all information about a specific userId
+	UserDelete(ctx echo.Context, userId int32) error
+	// UserGet will retrieve in backend all information about a specific userId
 	// (GET /users/{userId})
-	UsersGet(ctx echo.Context, userId int32) error
-	// UsersUpdate allows to modify information about a specific userId
+	UserGet(ctx echo.Context, userId int32) error
+	// UserUpdate allows to modify information about a specific userId
 	// (PUT /users/{userId})
-	UsersUpdate(ctx echo.Context, userId int32) error
-	// UsersChangePassword allows a user to change it's own password
+	UserUpdate(ctx echo.Context, userId int32) error
+	// UserChangePassword allows a user to change it's own password
 	// (PUT /users/{userId}/changepassword)
-	UsersChangePassword(ctx echo.Context, userId int32) error
+	UserChangePassword(ctx echo.Context, userId int32) error
 }
 
 // ServerInterfaceWrapper converts echo contexts to parameters.
@@ -38,14 +53,14 @@ type ServerInterfaceWrapper struct {
 	Handler ServerInterface
 }
 
-// UsersList converts echo context to params.
-func (w *ServerInterfaceWrapper) UsersList(ctx echo.Context) error {
+// GroupList converts echo context to params.
+func (w *ServerInterfaceWrapper) GroupList(ctx echo.Context) error {
 	var err error
 
 	ctx.Set(JWTAuthScopes, []string{""})
 
 	// Parameter object where we will unmarshal all parameters from the context
-	var params UsersListParams
+	var params GroupListParams
 	// ------------- Optional query parameter "limit" -------------
 
 	err = runtime.BindQueryParameter("form", true, false, "limit", ctx.QueryParams(), &params.Limit)
@@ -54,23 +69,108 @@ func (w *ServerInterfaceWrapper) UsersList(ctx echo.Context) error {
 	}
 
 	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.UsersList(ctx, params)
+	err = w.Handler.GroupList(ctx, params)
 	return err
 }
 
-// UsersCreate converts echo context to params.
-func (w *ServerInterfaceWrapper) UsersCreate(ctx echo.Context) error {
+// GroupCreate converts echo context to params.
+func (w *ServerInterfaceWrapper) GroupCreate(ctx echo.Context) error {
 	var err error
 
 	ctx.Set(JWTAuthScopes, []string{""})
 
 	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.UsersCreate(ctx)
+	err = w.Handler.GroupCreate(ctx)
 	return err
 }
 
-// UsersDelete converts echo context to params.
-func (w *ServerInterfaceWrapper) UsersDelete(ctx echo.Context) error {
+// GroupDelete converts echo context to params.
+func (w *ServerInterfaceWrapper) GroupDelete(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "groupId" -------------
+	var groupId int32
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "groupId", runtime.ParamLocationPath, ctx.Param("groupId"), &groupId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter groupId: %s", err))
+	}
+
+	ctx.Set(JWTAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GroupDelete(ctx, groupId)
+	return err
+}
+
+// GroupGet converts echo context to params.
+func (w *ServerInterfaceWrapper) GroupGet(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "groupId" -------------
+	var groupId int32
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "groupId", runtime.ParamLocationPath, ctx.Param("groupId"), &groupId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter groupId: %s", err))
+	}
+
+	ctx.Set(JWTAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GroupGet(ctx, groupId)
+	return err
+}
+
+// GroupUpdate converts echo context to params.
+func (w *ServerInterfaceWrapper) GroupUpdate(ctx echo.Context) error {
+	var err error
+	// ------------- Path parameter "groupId" -------------
+	var groupId int32
+
+	err = runtime.BindStyledParameterWithLocation("simple", false, "groupId", runtime.ParamLocationPath, ctx.Param("groupId"), &groupId)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter groupId: %s", err))
+	}
+
+	ctx.Set(JWTAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.GroupUpdate(ctx, groupId)
+	return err
+}
+
+// UserList converts echo context to params.
+func (w *ServerInterfaceWrapper) UserList(ctx echo.Context) error {
+	var err error
+
+	ctx.Set(JWTAuthScopes, []string{""})
+
+	// Parameter object where we will unmarshal all parameters from the context
+	var params UserListParams
+	// ------------- Optional query parameter "limit" -------------
+
+	err = runtime.BindQueryParameter("form", true, false, "limit", ctx.QueryParams(), &params.Limit)
+	if err != nil {
+		return echo.NewHTTPError(http.StatusBadRequest, fmt.Sprintf("Invalid format for parameter limit: %s", err))
+	}
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.UserList(ctx, params)
+	return err
+}
+
+// UserCreate converts echo context to params.
+func (w *ServerInterfaceWrapper) UserCreate(ctx echo.Context) error {
+	var err error
+
+	ctx.Set(JWTAuthScopes, []string{""})
+
+	// Invoke the callback with all the unmarshalled arguments
+	err = w.Handler.UserCreate(ctx)
+	return err
+}
+
+// UserDelete converts echo context to params.
+func (w *ServerInterfaceWrapper) UserDelete(ctx echo.Context) error {
 	var err error
 	// ------------- Path parameter "userId" -------------
 	var userId int32
@@ -83,12 +183,12 @@ func (w *ServerInterfaceWrapper) UsersDelete(ctx echo.Context) error {
 	ctx.Set(JWTAuthScopes, []string{""})
 
 	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.UsersDelete(ctx, userId)
+	err = w.Handler.UserDelete(ctx, userId)
 	return err
 }
 
-// UsersGet converts echo context to params.
-func (w *ServerInterfaceWrapper) UsersGet(ctx echo.Context) error {
+// UserGet converts echo context to params.
+func (w *ServerInterfaceWrapper) UserGet(ctx echo.Context) error {
 	var err error
 	// ------------- Path parameter "userId" -------------
 	var userId int32
@@ -101,12 +201,12 @@ func (w *ServerInterfaceWrapper) UsersGet(ctx echo.Context) error {
 	ctx.Set(JWTAuthScopes, []string{""})
 
 	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.UsersGet(ctx, userId)
+	err = w.Handler.UserGet(ctx, userId)
 	return err
 }
 
-// UsersUpdate converts echo context to params.
-func (w *ServerInterfaceWrapper) UsersUpdate(ctx echo.Context) error {
+// UserUpdate converts echo context to params.
+func (w *ServerInterfaceWrapper) UserUpdate(ctx echo.Context) error {
 	var err error
 	// ------------- Path parameter "userId" -------------
 	var userId int32
@@ -119,12 +219,12 @@ func (w *ServerInterfaceWrapper) UsersUpdate(ctx echo.Context) error {
 	ctx.Set(JWTAuthScopes, []string{""})
 
 	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.UsersUpdate(ctx, userId)
+	err = w.Handler.UserUpdate(ctx, userId)
 	return err
 }
 
-// UsersChangePassword converts echo context to params.
-func (w *ServerInterfaceWrapper) UsersChangePassword(ctx echo.Context) error {
+// UserChangePassword converts echo context to params.
+func (w *ServerInterfaceWrapper) UserChangePassword(ctx echo.Context) error {
 	var err error
 	// ------------- Path parameter "userId" -------------
 	var userId int32
@@ -137,7 +237,7 @@ func (w *ServerInterfaceWrapper) UsersChangePassword(ctx echo.Context) error {
 	ctx.Set(JWTAuthScopes, []string{""})
 
 	// Invoke the callback with all the unmarshalled arguments
-	err = w.Handler.UsersChangePassword(ctx, userId)
+	err = w.Handler.UserChangePassword(ctx, userId)
 	return err
 }
 
@@ -169,11 +269,16 @@ func RegisterHandlersWithBaseURL(router EchoRouter, si ServerInterface, baseURL 
 		Handler: si,
 	}
 
-	router.GET(baseURL+"/users", wrapper.UsersList)
-	router.POST(baseURL+"/users", wrapper.UsersCreate)
-	router.DELETE(baseURL+"/users/:userId", wrapper.UsersDelete)
-	router.GET(baseURL+"/users/:userId", wrapper.UsersGet)
-	router.PUT(baseURL+"/users/:userId", wrapper.UsersUpdate)
-	router.PUT(baseURL+"/users/:userId/changepassword", wrapper.UsersChangePassword)
+	router.GET(baseURL+"/groups", wrapper.GroupList)
+	router.POST(baseURL+"/groups", wrapper.GroupCreate)
+	router.DELETE(baseURL+"/groups/:groupId", wrapper.GroupDelete)
+	router.GET(baseURL+"/groups/:groupId", wrapper.GroupGet)
+	router.PUT(baseURL+"/groups/:groupId", wrapper.GroupUpdate)
+	router.GET(baseURL+"/users", wrapper.UserList)
+	router.POST(baseURL+"/users", wrapper.UserCreate)
+	router.DELETE(baseURL+"/users/:userId", wrapper.UserDelete)
+	router.GET(baseURL+"/users/:userId", wrapper.UserGet)
+	router.PUT(baseURL+"/users/:userId", wrapper.UserUpdate)
+	router.PUT(baseURL+"/users/:userId/changepassword", wrapper.UserChangePassword)
 
 }

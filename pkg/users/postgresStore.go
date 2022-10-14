@@ -17,7 +17,7 @@ import (
 var ErrUsernameNotFound = errors.New("username does not exist")
 
 const (
-	usersList = "SELECT id, name, email, username, creator, create_time, is_admin, is_locked, is_active, bad_password_count FROM go_user ORDER BY id;"
+	usersList = "SELECT id, name, email, username, creator, create_time, is_admin, is_locked, is_active FROM go_user ORDER BY id;"
 	usersGet  = `
 SELECT id, name, email, username,
        password_hash, external_id, orgunit_id, phone, is_locked, is_admin,
@@ -118,6 +118,22 @@ CREATE TABLE IF NOT EXISTS go_group
 );
 comment on table go_group is 'go_group contains the list of groups of the GO_USER microservice';
 `
+
+	groupCreate = `INSERT INTO go_group (name, create_time, creator, is_active, comment)
+					VALUES ($1, CURRENT_TIMESTAMP,$2,true,$3) RETURNING id;`
+	groupGet = `SELECT id, name, create_time, creator, last_modification_time, last_modification_user, is_active,
+	inactivation_time, inactivation_reason, comment FROM go_group WHERE id=$1`
+	groupList   = "SELECT id, name, is_active FROM go_group ORDER BY id"
+	groupDelete = "DELETE FROM go_group WHERE id = $1"
+	groupUpdate = `UPDATE go_group
+SET name                   = $1,
+    last_modification_time = CURRENT_TIMESTAMP,
+    last_modification_user = $2,
+    is_active              = $3,
+    inactivation_time      = $4,
+    inactivation_reason    = $5,
+    comment                = $6,
+WHERE id = $7;`
 )
 
 type PGX struct {
@@ -248,9 +264,9 @@ func (db *PGX) Create(u User) (*User, error) {
 }
 
 // List will retrieve all users in the store
-func (db *PGX) List(offset, limit int) ([]*User, error) {
+func (db *PGX) List(offset, limit int) ([]*UserList, error) {
 	db.log.Println("trace : entering List()")
-	var res []*User
+	var res []*UserList
 
 	err := pgxscan.Select(context.Background(), db.Db.Conn, &res, usersList)
 	if err != nil {
@@ -438,4 +454,115 @@ func (db *PGX) ResetPassword(id int32, passwordHash string, idCurrentUser int) e
 	}
 	// if we get to here all is good
 	return nil
+}
+
+// CreateGroup saves a new group in the storage.
+func (db *PGX) CreateGroup(g Group) (*Group, error) {
+	db.log.Printf("trace : entering CreateGroup(%q)", g.Name)
+	if len(g.Name) < 1 {
+		return nil, errors.New("group.name cannot be empty")
+	}
+	if len(g.Name) < 6 {
+		return nil, errors.New("group.name minLength is 5")
+	}
+	var lastInsertId int = 0
+
+	err := db.Db.Conn.QueryRow(context.Background(), groupCreate,
+		g.Name, g.Creator, &g.Comment).Scan(&lastInsertId)
+	if err != nil {
+		db.log.Printf("error : CreateGroup(%q) unexpectedly failed. error : %v", g.Name, err)
+		return nil, err
+	}
+	db.log.Printf("info : CreateGroup(%q) created with id : %v", g.Name, lastInsertId)
+
+	// if we get to here all is good, so let's retrieve a fresh copy to send it back
+	created, err := db.GetGroup(int32(lastInsertId))
+	if err != nil {
+		return nil, GetErrorF("error : group was created, but can not be retrieved", err)
+	}
+	return created, nil
+}
+
+// GetGroup returns the group with the specified users ID.
+func (db *PGX) GetGroup(id int32) (*Group, error) {
+	db.log.Printf("trace : entering GetGroup(%d)", id)
+	res := &Group{}
+	err := pgxscan.Get(context.Background(), db.Db.Conn, res, groupGet, id)
+	if err != nil {
+		db.log.Printf("error : GetGroup(%d) Select unexpectedly failed, error : %v", id, err)
+		return nil, err
+	}
+	if res == nil {
+		db.log.Printf("info : GetGroup(%d) returned no results ", id)
+		return nil, errors.New("records not found")
+	}
+	return res, nil
+}
+
+// ListGroup will retrieve all groups in the store
+func (db *PGX) ListGroup(offset, limit int) ([]*GroupList, error) {
+	db.log.Println("trace : entering ListGroup()")
+	var res []*GroupList
+
+	err := pgxscan.Select(context.Background(), db.Db.Conn, &res, groupList)
+	if err != nil {
+		db.log.Printf("error : ListGroup Select unexpectedly failed, error : %v", err)
+		return nil, err
+	}
+	if res == nil {
+		db.log.Println("info : ListGroup query returned no results ")
+		return nil, errors.New("records not found")
+	}
+
+	return res, nil
+}
+
+// DeleteGroup removes the group with given ID from the storage.
+func (db *PGX) DeleteGroup(id int32) error {
+	db.log.Printf("trace : entering DeleteGroup(%d)", id)
+	rowsAffected, err := db.Db.ExecActionQuery(groupDelete, id)
+	if err != nil {
+		return GetErrorF("error : group could not be deleted", err)
+	}
+	if rowsAffected < 1 {
+		return GetErrorF("error : group was not deleted", err)
+	}
+	return nil
+}
+
+// UpdateGroup updates the group with given ID in the storage.
+func (db *PGX) UpdateGroup(id int32, group Group) (*Group, error) {
+	db.log.Printf("trace : entering UpdateGroup(%d)", id)
+	// first check business rules for name field
+	if len(group.Name) < 1 {
+		return nil, errors.New("user name cannot be empty")
+	}
+	if len(group.Name) < 6 {
+		return nil, errors.New("CreateUser name minLength is 5")
+	}
+	var rowsAffected int = 0
+	var err error
+	now := time.Now()
+	group.LastModificationTime = &now
+	if group.IsActive == false {
+		group.InactivationTime = &now
+	} else {
+		group.InactivationTime = nil
+	}
+	db.log.Printf("info : just before UpdateGroup(%+v)", group)
+	rowsAffected, err = db.Db.ExecActionQuery(groupUpdate,
+		group.Name, group.LastModificationUser, group.IsActive, &group.InactivationTime,
+		&group.InactivationReason, &group.Comment, id)
+	if err != nil {
+		return nil, GetErrorF("error: UpdateGroup() query failed", err)
+	}
+	if rowsAffected < 1 {
+		return nil, GetErrorF("error : UpdateGroup() no row modified", err)
+	}
+	// if we get to here all is good, so let's retrieve a fresh copy to send it back
+	updatedUser, err := db.GetGroup(id)
+	if err != nil {
+		return nil, GetErrorF("error : Update() group updated, but can not be retrieved", err)
+	}
+	return updatedUser, nil
 }

@@ -17,7 +17,7 @@ const (
 // Storage is an interface to different implementation of persistence for Users
 type Storage interface {
 	// List returns the list of existing users with the given offset and limit.
-	List(offset, limit int) ([]*User, error)
+	List(offset, limit int) ([]*UserList, error)
 	// Get returns the users with the specified users ID.
 	Get(id int32) (*User, error)
 	// GetMaxId returns the maximum value of users id existing in store.
@@ -40,6 +40,16 @@ type Storage interface {
 	IsUserAdmin(id int32) bool
 	// IsUserActive returns true if the user with the specified id has the is_active attribute set to true
 	IsUserActive(id int32) bool
+	// CreateGroup saves a new group in the storage.
+	CreateGroup(group Group) (*Group, error)
+	// UpdateGroup updates the group with given ID in the storage.
+	UpdateGroup(id int32, group Group) (*Group, error)
+	// DeleteGroup removes the group with given ID from the storage.
+	DeleteGroup(id int32) error
+	// ListGroup returns the list of active groups with the given offset and limit.
+	ListGroup(offset, limit int) ([]*GroupList, error)
+	// GetGroup returns the group with the specified users ID.
+	GetGroup(id int32) (*Group, error)
 }
 
 func GetStorageInstance(dbDriver, dbConnectionString string, log *log.Logger) (Storage, error) {
