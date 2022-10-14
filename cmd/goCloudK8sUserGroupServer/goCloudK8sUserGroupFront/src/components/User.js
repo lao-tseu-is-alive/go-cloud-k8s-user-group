@@ -43,7 +43,7 @@ const user = {
       })
       .catch((err) => {
         const errMessage = getErrorMessage(method, `## ERREUR RESEAU DANS ${method} PENDANT UN APPEL DISTANT axios.get`, err);
-        if (functionExist(callbackLoaded)) callbackLoaded(null, errMessage);
+        if (functionExist(callbackLoaded)) callbackLoaded(err, errMessage);
       });
   },
 
@@ -60,7 +60,7 @@ const user = {
       })
       .catch((err) => {
         const errMessage = getErrorMessage(method, `## ERREUR RESEAU DANS ${method} PENDANT UN APPEL DISTANT axios.get`, err);
-        if (functionExist(callbackLoaded)) callbackLoaded(null, errMessage);
+        if (functionExist(callbackLoaded)) callbackLoaded(err, errMessage);
       });
   },
 
@@ -77,7 +77,7 @@ const user = {
       })
       .catch((err) => {
         const errMessage = getErrorMessage(method, `## ERREUR RESEAU DANS ${method} PENDANT UN APPEL DISTANT axios.post`, err);
-        if (functionExist(callbackLoaded)) callbackLoaded(null, errMessage);
+        if (functionExist(callbackLoaded)) callbackLoaded(err, errMessage);
       });
   },
 
@@ -95,7 +95,7 @@ const user = {
       })
       .catch((err) => {
         const errMessage = getErrorMessage(method, `## ERREUR RESEAU DANS ${method} PENDANT UN APPEL DISTANT axios.put`, err);
-        if (functionExist(callbackLoaded)) callbackLoaded(null, errMessage);
+        if (functionExist(callbackLoaded)) callbackLoaded(err, errMessage);
       });
   },
 
@@ -112,7 +112,7 @@ const user = {
       })
       .catch((err) => {
         const errMessage = getErrorMessage(method, `## ERREUR RESEAU DANS ${method} PENDANT UN APPEL DISTANT axios.delete`, err);
-        if (functionExist(callbackLoaded)) callbackLoaded(null, errMessage);
+        if (functionExist(callbackLoaded)) callbackLoaded(err, errMessage);
       });
   },
 };

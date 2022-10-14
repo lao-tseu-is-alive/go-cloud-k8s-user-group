@@ -20,7 +20,7 @@
           <FeedBack ref="feedback" :msg="feedbackMsg" :msg-type="feedbackType" :visible="feedbackVisible" />
           <template v-if="isUserAuthenticated ">
             <template v-if="isUserAdmin">
-              <ListUsers :display="isUserAuthenticated" />
+              <ListUsers :display="isUserAuthenticated" @user-invalid-session="logout" />
             </template>
             <h4>Connexion de {{ getUserLogin() }} [{{ getUserEmail() }}]</h4>
           </template>

@@ -232,12 +232,6 @@ func NewPgxDB(dbConnectionString string, maxConnectionsInPool int, log *log.Logg
 // Create will store the new user in the store
 func (db *PGX) Create(u User) (*User, error) {
 	db.log.Printf("trace : entering Create(%q,%q)", u.Name, u.Username)
-	if len(u.Name) < 1 {
-		return nil, errors.New("user name cannot be empty")
-	}
-	if len(u.Name) < 6 {
-		return nil, errors.New("CreateUser name minLength is 5")
-	}
 	var lastInsertId int = 0
 
 	goHash, err := crypto.HashAndSalt(u.PasswordHash)
@@ -338,13 +332,6 @@ func (db *PGX) Count() (int32, error) {
 // Update the users stored in DB with given id and other information in struct
 func (db *PGX) Update(id int32, user User) (*User, error) {
 	db.log.Printf("trace : entering Update(%d)", id)
-	// first check business rules for name field
-	if len(user.Name) < 1 {
-		return nil, errors.New("user name cannot be empty")
-	}
-	if len(user.Name) < 6 {
-		return nil, errors.New("CreateUser name minLength is 5")
-	}
 	var rowsAffected int = 0
 	var err error
 	now := time.Now()

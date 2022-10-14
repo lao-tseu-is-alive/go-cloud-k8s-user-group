@@ -179,6 +179,8 @@ const props = defineProps({
   },
 });
 
+const emit = defineEmits(['user-invalid-session']);
+
 const getNumUsers = computed(() => {
   const method = 'getNumUsers';
   log.t(`##-->${moduleName}::${method}()`);
@@ -188,15 +190,15 @@ const getNumUsers = computed(() => {
   if (loadedData.value) {
     return dataUsers.value.length;
   } if ((isNullOrUndefined(dataUsers.value)) || dataUsers.value.length < 1 || !loadingData.value) {
-    user.getList((data, errMessage) => {
-      if (!isNullOrUndefined(data)) {
-        dataUsers.value = data;
+    user.getList((retval, statusMessage) => {
+      if (statusMessage === 'SUCCESS') {
+        dataUsers.value = retval;
         log.l(`# IN loadData -> dataUsers.value.length : ${dataUsers.value.length}`);
         loadedData.value = true;
         loadingData.value = false;
         return dataUsers.value.length;
       }
-      log.e(`# GOT ERROR IN loadData() in callback for user.getList data: ${errMessage}`);
+      log.e(`# GOT ERROR calling user.getList : ${statusMessage}, \n error:`, retval);
       loadedData.value = false;
       loadingData.value = false;
       return 0;
@@ -216,6 +218,14 @@ const findIndexById = (id) => {
     }
   }
   return index;
+};
+const checkNetworkError = (err) => {
+  if (!isNullOrUndefined(err.response)) {
+    log.w('retval.response', err.response, err.response.status, (err.response.status === 401));
+    if (err.response.status === 401) {
+      emit('user-invalid-session', 'User session is invalid', err.response);
+    }
+  }
 };
 
 const openNew = () => {
@@ -248,8 +258,8 @@ const saveUser = () => {
       } else {
         tempUser.password_hash = '';
       }
-      user.modifyUser(tempUser, (retval, errorMsg) => {
-        if (errorMsg === 'SUCCESS') {
+      user.modifyUser(tempUser, (retval, statusMessage) => {
+        if (statusMessage === 'SUCCESS') {
           toast.add({
             severity: 'success', summary: 'Successful', detail: 'User Updated', life: timeToDisplaySucces,
           });
@@ -259,10 +269,11 @@ const saveUser = () => {
           log.l('# dataUsers.value : ', dataUsers.value);
           // this.initialize(); // on recupere la liste a jour
         } else {
-          log.e(`##-->${moduleName}::${method} ERROR SAVING EDITED USER id:[${dataCurrentUser.value.id}] ERROR : ${errorMsg}`, retval);
+          log.e(`##-->${moduleName}::${method} ERROR SAVING EDITED USER id:[${dataCurrentUser.value.id}] ERROR : ${statusMessage} \n error:`, retval);
           toast.add({
-            severity: 'error', summary: 'Error', detail: `⚡⚡⚠ User was not saved in DB ! error: ${errorMsg}`, life: timeToDisplayError,
+            severity: 'error', summary: 'Error', detail: `⚡⚡⚠ User was not saved in DB ! error: ${statusMessage}`, life: timeToDisplayError,
           });
+          checkNetworkError(retval);
         }
       });
     } else { // NEW USER
@@ -271,8 +282,8 @@ const saveUser = () => {
       const tempUser = { ...dataCurrentUser.value };
       tempUser.id = 0;
       tempUser.password_hash = `${getPasswordHash(dataCurrentUser.value.password)}`;
-      user.newUser(tempUser, (retval, errorMsg) => {
-        if (errorMsg === 'SUCCESS') {
+      user.newUser(tempUser, (retval, statusMessage) => {
+        if (statusMessage === 'SUCCESS') {
           log.w('# in saveDialog callback for user.newUser call val', retval);
           toast.add({
             severity: 'success', summary: 'Successful', detail: `User created in DB id: ${retval.id}`, life: timeToDisplaySucces,
@@ -283,10 +294,11 @@ const saveUser = () => {
           dataUsers.value.push(tempUser);
           // this.initialize(); // on recupere la liste a jour
         } else {
-          log.e(`# ERROR in saveDialog callback for objet.newObjet call ERROR : ${errorMsg} val`, retval);
+          log.e(`# ERROR in saveDialog callback for objet.newObjet call ERROR : ${statusMessage} \n error:`, retval);
           toast.add({
-            severity: 'error', summary: 'Error', detail: `⚡⚡⚠ User was not created in DB ! error: ${errorMsg}`, life: timeToDisplayError,
+            severity: 'error', summary: 'Error', detail: `⚡⚡⚠ User was not created in DB ! error: ${statusMessage}`, life: timeToDisplayError,
           });
+          checkNetworkError(retval);
         }
       });
     }
@@ -298,16 +310,17 @@ const editUser = (currentUser) => {
   const method = 'editUser';
   log.t(`##-->${moduleName}::${method}`, currentUser);
   dataCurrentUser.value = { ...currentUser };
-  user.getUser(currentUser.id, (retval, errorMsg) => {
-    if (errorMsg === 'SUCCESS') {
+  user.getUser(currentUser.id, (retval, statusMessage) => {
+    if (statusMessage === 'SUCCESS') {
       log.l('# in editUser callback for user.getUser call val', retval);
       dataCurrentUser.value = { ...retval };
       userDialog.value = true;
     } else {
-      log.e(`# ERROR in editItem callback for user.getUser call ERROR : ${errorMsg} val:`, retval);
+      log.e(`# ERROR in editUser user.getUser callback: ${statusMessage} \n error:`, retval);
       toast.add({
-        severity: 'error', summary: 'Error', detail: `⚡⚡⚠ Unable to retrieve this User id: [${currentUser.value.id} from DB ! error: ${errorMsg}`, life: timeToDisplayError,
+        severity: 'error', summary: 'Error', detail: `⚡⚡⚠ Unable to retrieve this User id: [${currentUser.id} from DB ! error: ${statusMessage}`, life: timeToDisplayError,
       });
+      checkNetworkError(retval);
     }
   });
 };
@@ -335,8 +348,8 @@ const deleteUser = () => {
     });
     return;
   }
-  user.deleteUser(id, (retval, errorMsg) => {
-    if (errorMsg === 'SUCCESS') {
+  user.deleteUser(id, (retval, statusMessage) => {
+    if (statusMessage === 'SUCCESS') {
       log.w('# in saveDialog callback for user.deleteUser call val', retval);
       dataUsers.value = dataUsers.value.filter((val) => val.id !== dataCurrentUser.value.id);
       deleteUserDialog.value = false;
@@ -345,10 +358,11 @@ const deleteUser = () => {
         severity: 'success', summary: 'Successful', detail: 'User Deleted', life: timeToDisplaySucces,
       });
     } else {
-      log.e(`# ERROR in deleteUser callback for user.deleteUser call ERROR : ${errorMsg} val:`, retval);
+      log.e(`# ERROR in deleteUser callback for user.deleteUser call ERROR : ${statusMessage} \n error:`, retval);
       toast.add({
-        severity: 'error', summary: 'Error', detail: `⚡⚡⚠ Unable to delete this User id: [${dataCurrentUser.value.id} from DB ! error: ${errorMsg}`, life: timeToDisplayError,
+        severity: 'error', summary: 'Error', detail: `⚡⚡⚠ Unable to delete this User id: [${dataCurrentUser.value.id} from DB ! error: ${statusMessage}`, life: timeToDisplayError,
       });
+      checkNetworkError(retval);
     }
   });
 };

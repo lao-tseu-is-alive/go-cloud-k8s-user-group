@@ -3,9 +3,9 @@ export function fetchData(url, refData, refLoaded, refError) {
   console.log(`##--> ${method}`);
   refLoaded.value = false;
   return fetch(url, {
-    method: "get",
+    method: 'get',
     headers: {
-      "content-type": "application/json",
+      'content-type': 'application/json',
     },
   })
     .then((response) => {

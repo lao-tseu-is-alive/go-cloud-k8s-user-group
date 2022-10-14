@@ -68,7 +68,7 @@ func (s Service) UserCreate(ctx echo.Context) error {
 		return ctx.JSON(http.StatusBadRequest, fmt.Sprint("CreateUser name cannot be empty"))
 	}
 	if len(newUser.Name) < 5 {
-		return ctx.JSON(http.StatusBadRequest, fmt.Sprint("CreateUser name minLength is 5"))
+		return ctx.JSON(http.StatusBadRequest, fmt.Sprintf("CreateUser name minLength is 5 not (%d)", len(newUser.Name)))
 	}
 	if len(newUser.Username) < 1 {
 		return ctx.JSON(http.StatusBadRequest, fmt.Sprint("CreateUser username cannot be empty"))
