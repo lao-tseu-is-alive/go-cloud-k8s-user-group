@@ -20,7 +20,14 @@
           <FeedBack ref="feedback" :msg="feedbackMsg" :msg-type="feedbackType" :visible="feedbackVisible" />
           <template v-if="isUserAuthenticated ">
             <template v-if="isUserAdmin">
-              <ListUsers :display="isUserAuthenticated" @user-invalid-session="logout" />
+              <tab-view v-model:activeIndex="activeIndex">
+                <tab-panel header="Utilisateurs">
+                  <ListUsers :display="isUserAuthenticated" @user-invalid-session="logout" />
+                </tab-panel>
+                <tab-panel header="Groupes">
+                  <ListGroups :display="isUserAuthenticated" @user-invalid-session="logout" />
+                </tab-panel>
+              </tab-view>
             </template>
             <h4>Connexion de {{ getUserLogin() }} [{{ getUserEmail() }}]</h4>
           </template>
@@ -40,9 +47,11 @@
 </template>
 
 <script setup>
-import Toolbar from 'primevue/toolbar';
 import Button from 'primevue/button';
+import TabView from 'primevue/tabview';
+import TabPanel from 'primevue/tabpanel';
 import Toast from 'primevue/toast';
+import Toolbar from 'primevue/toolbar';
 import { onMounted, ref } from 'vue';
 import LoginUser from './components/LoginUser.vue';
 import FeedBack from './components/FeedBack.vue';
@@ -56,8 +65,10 @@ import {
 } from './config';
 import { isNullOrUndefined } from './tools/utils';
 import ListUsers from './components/ListUsers.vue';
+import ListGroups from './components/ListGroups.vue';
 
 const log = getLog(APP, 4, 2);
+const activeIndex = ref(1);
 const isUserAuthenticated = ref(false);
 const isUserAdmin = ref(false);
 const isNetworkOk = ref(true);

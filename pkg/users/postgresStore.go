@@ -132,7 +132,7 @@ SET name                   = $1,
     is_active              = $3,
     inactivation_time      = $4,
     inactivation_reason    = $5,
-    comment                = $6,
+    comment                = $6
 WHERE id = $7;`
 )
 
@@ -498,7 +498,8 @@ func (db *PGX) ListGroup(offset, limit int) ([]*GroupList, error) {
 	}
 	if res == nil {
 		db.log.Println("info : ListGroup query returned no results ")
-		return nil, errors.New("records not found")
+		// return an empty array
+		return make([]*GroupList, 1), nil
 	}
 
 	return res, nil

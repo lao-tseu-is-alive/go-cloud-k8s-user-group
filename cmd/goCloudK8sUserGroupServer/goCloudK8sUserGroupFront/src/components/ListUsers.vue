@@ -20,14 +20,14 @@
             </h4>
           </template>
           <template #end>
-            <Button label="New User" icon="pi pi-plus" class="p-button-success mr-0" @click="openNew" />
+            <Button label="Nouvel Utilisateur" icon="pi pi-plus" class="p-button-success mr-0" @click="openNew" />
           </template>
         </Toolbar>
       </template>
       <ColumnGroup type="header">
         <Row>
           <Column field="id" header="id" :sortable="true" />
-          <Column field="username" header="Username" :sortable="true" />
+          <Column field="username" header="Utilisateur" :sortable="true" />
           <Column field="name" header="Nom" :sortable="true" />
           <Column field="is_admin" header="Admin?" :sortable="true" />
           <Column field="is_locked" header="Locked?" :sortable="true" />

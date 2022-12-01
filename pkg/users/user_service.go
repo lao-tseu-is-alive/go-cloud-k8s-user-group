@@ -47,16 +47,6 @@ func (s Service) UserCreate(ctx echo.Context) error {
 	if !s.Store.IsUserAdmin(currentUserId) {
 		return echo.NewHTTPError(http.StatusUnauthorized, "current user has no admin privilege")
 	}
-	/* uncomment when jw is implemented
-	// get the current user from JWT TOKEN
-	user := ctx.Get("user").(*jwt.Token)
-	claims := user.Claims.(*MyCustomJWTClaims)
-	// IF USER IS NOT ADMIN RETURN 401 Unauthorized
-	currentUserId := claims.ID
-	if !s.Store.IsUserAdmin(currentUserId) {
-		return echo.NewHTTPError(http.StatusUnauthorized, "current user has no admin privilege")
-	}
-	*/
 	newUser := &User{
 		Id:      0,
 		Creator: int32(currentUserId),

@@ -2,7 +2,7 @@ package version
 
 var (
 	APP        = "goCloudK8sUserGroup"
-	VERSION    = "0.1.4"
+	VERSION    = "0.1.5"
 	REPOSITORY = "github.com/lao-tseu-is-alive/go-cloud-k8s-user-group"
 	REVISION   = "unknown"
 	BuildStamp = "unknown"
