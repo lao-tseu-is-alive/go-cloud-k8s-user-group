@@ -48,52 +48,98 @@
     </DataTable>
   </div>
   <!-- BEGIN DIALOG EDIT USER -->
-  <Dialog v-model:visible="userDialog" :style="{ width: '450px' }" :header="`User id [${dataCurrentUser.id}] details`" :modal="true" class="p-fluid">
+  <!--
+  default width is set to 60vw and below 961px, width would be 75vw
+   and finally below 641px width becomes 100%
+  -->
+  <Dialog
+    v-model:visible="userDialog"
+    :breakpoints="{ '960px': '75vw', '640px': '100vw' }"
+    :style="{ width: '60vw' }"
+    :header="`Utilisateur id[${dataCurrentUser.id}], création:${dataCurrentUser.create_time}`"
+    :modal="true"
+    class="p-fluid"
+  >
     <div class="field">
-      <label for="name">Name</label>
+      <label for="name">Nom</label>
       <InputText id="name" v-model.trim="dataCurrentUser.name" required="true" autofocus :class="{ 'p-invalid': submitted && !dataCurrentUser.name }" />
-      <small v-if="submitted && !dataCurrentUser.name" class="p-error">Name is required.</small>
+      <small v-if="submitted && !dataCurrentUser.name" class="p-error">Name est obligatoire.</small>
     </div>
     <div class="field">
-      <label for="name">Username</label>
+      <label for="username">Username</label>
       <InputText id="username" v-model.trim="dataCurrentUser.username" required="true" :class="{ 'p-invalid': submitted && !dataCurrentUser.username }" />
-      <small v-if="submitted && !dataCurrentUser.username" class="p-error">Username is required.</small>
+      <small v-if="submitted && !dataCurrentUser.username" class="p-error">Username est obligatoire.</small>
     </div>
     <div class="field">
-      <label for="name">Password</label>
+      <label for="password">Mot de passe</label>
       <InputText id="password" v-model.trim="dataCurrentUser.password" type="password" :class="{ 'p-invalid': submitted && isNewUser && !dataCurrentUser.password }" />
-      <small v-if="submitted && isNewUser && !dataCurrentUser.password" class="p-error">Password is required.</small>
+      <small v-if="submitted && isNewUser && !dataCurrentUser.password" class="p-error">Le mot de passe est obligatoire.</small>
     </div>
     <div class="field">
-      <label for="name">Email</label>
+      <label for="email">Email</label>
       <InputText id="email" v-model.trim="dataCurrentUser.email" required="true" :class="{ 'p-invalid': submitted && !dataCurrentUser.email }" />
-      <small v-if="submitted && !dataCurrentUser.email" class="p-error">Email is required.</small>
+      <small v-if="submitted && !dataCurrentUser.email" class="p-error">L'email est obligatoire.</small>
     </div>
     <div class="field">
-      <label for="name">OrgUnit</label>
-      <InputText id="email" v-model.trim="dataCurrentUser.enterprise" />
+      <label for="orgunit">OrgUnit</label>
+      <InputText id="orgunit" v-model.trim="dataCurrentUser.orgunit_id" />
     </div>
     <div class="field">
-      <label for="name">Phone</label>
-      <InputText id="email" v-model.trim="dataCurrentUser.phone" />
+      <label for="groups">Groupes</label>
+      <MultiSelect
+        v-model="dataCurrentUser.groups_id"
+        :options="groupsList"
+        option-label="name"
+        option-value="id"
+        placeholder="Choisissez les groupes"
+      />
+      <InputText id="groups" v-model.trim="dataCurrentUser.groups_id" />
     </div>
     <div class="field">
-      <label for="description">Comment</label>
+      <label for="phone">Téléphone</label>
+      <InputText id="phone" v-model.trim="dataCurrentUser.phone" />
+    </div>
+    <div class="field">
+      <label for="description">Commentaire</label>
       <Textarea id="description" v-model="dataCurrentUser.comment" required="true" rows="3" cols="20" />
     </div>
 
     <div class="formgrid grid">
       <div class="field col">
-        <label for="isadmin">Is Administrator ?</label>
-        <InputSwitch id="isadmin" v-model="dataCurrentUser.is_admin" />
+        <label for="isadmin">Administrateur ?</label>
+        <ToggleButton
+          v-model="dataCurrentUser.is_admin"
+          on-label="Oui"
+          off-label="Non"
+          on-icon="pi pi-check"
+          off-icon="pi pi-times"
+          class="w-full sm:w-10rem"
+          aria-label="compte administrateur"
+        />
       </div>
       <div class="field col">
-        <label for="islocked">IS locked ?</label>
-        <InputSwitch id="islocked" v-model="dataCurrentUser.is_locked" />
+        <label for="islocked">verrouillé ?</label>
+        <ToggleButton
+          v-model="dataCurrentUser.is_locked"
+          on-label="Oui"
+          off-label="Non"
+          on-icon="pi pi-check"
+          off-icon="pi pi-times"
+          class="w-full sm:w-10rem"
+          aria-label="compte verrouillé"
+        />
       </div>
       <div class="field col">
-        <label for="isactive">IS active ?</label>
-        <InputSwitch id="isactive" v-model="dataCurrentUser.is_active" />
+        <label for="isactive">Compte actif ? </label>
+        <ToggleButton
+          v-model="dataCurrentUser.is_active"
+          on-label="Oui"
+          off-label="Non"
+          on-icon="pi pi-check"
+          off-icon="pi pi-times"
+          class="w-full sm:w-10rem"
+          aria-label="compte actif"
+        />
       </div>
     </div>
     <template #footer>
@@ -120,20 +166,22 @@
 import { onMounted, ref, computed } from 'vue';
 import { useToast } from 'primevue/usetoast';
 import Button from 'primevue/button';
-import Toolbar from 'primevue/toolbar';
-import DataTable from 'primevue/datatable';
 import Column from 'primevue/column';
 import ColumnGroup from 'primevue/columngroup';
-import Row from 'primevue/row';
+import DataTable from 'primevue/datatable';
 import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
-import InputSwitch from 'primevue/inputswitch';
+import MultiSelect from 'primevue/multiselect';
+import Row from 'primevue/row';
+import Toolbar from 'primevue/toolbar';
 import Textarea from 'primevue/textarea';
+import ToggleButton from 'primevue/togglebutton';
 import { FilterMatchMode } from 'primevue/api';
 import user from './User';
 import { getPasswordHash, getUserId } from './Login';
 import { getLog } from '../config';
 import { isNullOrUndefined } from '../tools/utils';
+import group from './Group';
 
 const moduleName = 'ListUsers';
 const timeToDisplayError = 7000;
@@ -142,14 +190,13 @@ const timeToDisplaySucces = 4000;
 const log = getLog(moduleName, 4, 2);
 const loadedData = ref(false);
 const loadingData = ref(false);
+const loadingGroupsList = ref(false);
 const userDialog = ref(false);
 const deleteUserDialog = ref(false);
 const submitted = ref(false);
 const isNewUser = ref(false);
 const toast = useToast();
 const dt = ref();
-// u.Name, u.Email, u.Username, u.PasswordHash, &u.ExternalId, &u.Enterprise, &u.Phone, //$1-$7
-// u.IsAdmin, u.Creator, &u.Comment
 const defaultUser = {
   id: 0,
   name: 'otto',
@@ -158,13 +205,15 @@ const defaultUser = {
   password: '',
   password_hash: '',
   external_id: 0,
-  enterprise: null,
+  orgunit_id: 0,
+  groups_id: [],
   phone: null,
   comment: null,
   is_admin: false,
   is_locked: false,
   is_active: true,
 };
+const groupsList = ref([]);
 const dataCurrentUser = ref(defaultUser);
 const dataUsers = ref([defaultUser]);
 const filters = ref({
@@ -243,6 +292,26 @@ const hideDialog = () => {
   isNewUser.value = false;
   submitted.value = false;
 };
+
+const loadGroupsList = (fnOnsuccess = null) => {
+  const method = 'loadGroupsList';
+  log.t(`##-->${moduleName}::${method}()`);
+  if ((isNullOrUndefined(groupsList.value)) || !loadingGroupsList.value) {
+    loadingGroupsList.value = true;
+    group.getList((retval, statusMessage) => {
+      if (statusMessage === 'SUCCESS') {
+        const listOfGroups = [{ name: 'readers', value: '1' }]; // retval.map((e)=>{ e.})
+        groupsList.value = listOfGroups;
+        log.l(`# IN getListGroups -> dataGroups.value.length : ${groupsList.value.length}`);
+        loadingGroupsList.value = false;
+        fnOnsuccess();
+      }
+      log.e(`# GOT ERROR calling group.getList : ${statusMessage}, \n error:`, retval);
+      loadingGroupsList.value = false;
+    });
+  }
+};
+
 const saveUser = () => {
   const method = 'saveUser';
   log.t(`##-->${moduleName}::${method} id:[${dataCurrentUser.value.id}`);
@@ -308,13 +377,16 @@ const saveUser = () => {
 };
 const editUser = (currentUser) => {
   const method = 'editUser';
-  log.t(`##-->${moduleName}::${method}`, currentUser);
+  log.t(`##-->${moduleName}::${method}(id:${currentUser.id})`, currentUser);
   dataCurrentUser.value = { ...currentUser };
   user.getUser(currentUser.id, (retval, statusMessage) => {
     if (statusMessage === 'SUCCESS') {
       log.l('# in editUser callback for user.getUser call val', retval);
       dataCurrentUser.value = { ...retval };
-      userDialog.value = true;
+      // let's retrieve all groups
+      loadGroupsList(() => {
+        userDialog.value = true;
+      });
     } else {
       log.e(`# ERROR in editUser user.getUser callback: ${statusMessage} \n error:`, retval);
       toast.add({

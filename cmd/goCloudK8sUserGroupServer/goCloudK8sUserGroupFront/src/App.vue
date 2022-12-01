@@ -68,7 +68,7 @@ import ListUsers from './components/ListUsers.vue';
 import ListGroups from './components/ListGroups.vue';
 
 const log = getLog(APP, 4, 2);
-const activeIndex = ref(1);
+const activeIndex = ref(0);
 const isUserAuthenticated = ref(false);
 const isUserAdmin = ref(false);
 const isNetworkOk = ref(true);

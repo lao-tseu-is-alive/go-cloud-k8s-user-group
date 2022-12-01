@@ -20,7 +20,7 @@
             </h4>
           </template>
           <template #end>
-            <Button label="Nouvel Groupe" icon="pi pi-plus" class="p-button-success mr-0" @click="openNew" />
+            <Button label="Nouveau Groupe" icon="pi pi-plus" class="p-button-success mr-0" @click="openNew" />
           </template>
         </Toolbar>
       </template>
@@ -101,7 +101,7 @@ import { isNullOrUndefined } from '../tools/utils';
 
 const moduleName = 'ListGroups';
 const timeToDisplayError = 7000;
-const timeToDisplaySucces = 4000;
+const timeToDisplaySuccess = 4000;
 
 const log = getLog(moduleName, 4, 2);
 const loadedData = ref(false);
@@ -210,7 +210,7 @@ const saveGroup = () => {
       group.modifyGroup(tempGroup, (retval, statusMessage) => {
         if (statusMessage === 'SUCCESS') {
           toast.add({
-            severity: 'success', summary: 'Successful', detail: 'Group Updated', life: timeToDisplaySucces,
+            severity: 'success', summary: 'Successful', detail: 'Group Updated', life: timeToDisplaySuccess,
           });
           log.l('# in save callback for group.modifyGroup call val', retval);
           dataGroups.value[findIndexById(retval.id)] = retval;
@@ -234,7 +234,7 @@ const saveGroup = () => {
         if (statusMessage === 'SUCCESS') {
           log.w('# in saveDialog callback for group.newGroup call val', retval);
           toast.add({
-            severity: 'success', summary: 'Successful', detail: `Group created in DB id: ${retval.id}`, life: timeToDisplaySucces,
+            severity: 'success', summary: 'Successful', detail: `Group created in DB id: ${retval.id}`, life: timeToDisplaySuccess,
           });
           log.w(`# in saveDialog for new item id ${retval}`);
           tempGroup.datecreated = new Date();
@@ -289,7 +289,7 @@ const deleteGroup = () => {
       deleteGroupDialog.value = false;
       dataCurrentGroup.value = defaultGroup;
       toast.add({
-        severity: 'success', summary: 'Successful', detail: 'Group Deleted', life: timeToDisplaySucces,
+        severity: 'success', summary: 'Successful', detail: 'Group Deleted', life: timeToDisplaySuccess,
       });
     } else {
       log.e(`# ERROR in deleteGroup callback for group.deleteGroup call ERROR : ${statusMessage} \n error:`, retval);
