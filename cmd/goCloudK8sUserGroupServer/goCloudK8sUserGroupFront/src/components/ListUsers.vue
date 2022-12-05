@@ -300,11 +300,13 @@ const loadGroupsList = (fnOnsuccess = null) => {
     loadingGroupsList.value = true;
     group.getList((retval, statusMessage) => {
       if (statusMessage === 'SUCCESS') {
-        const listOfGroups = [{ name: 'readers', value: '1' }]; // retval.map((e)=>{ e.})
+        // const listOfGroups = [{ name: 'readers', value: '1' }]; // retval.map((e)=>{ e.})
+        const listOfGroups = retval.map((e) => ({ id: e.id, name: e.name }));
         groupsList.value = listOfGroups;
         log.l(`# IN getListGroups -> dataGroups.value.length : ${groupsList.value.length}`);
         loadingGroupsList.value = false;
         fnOnsuccess();
+        return;
       }
       log.e(`# GOT ERROR calling group.getList : ${statusMessage}, \n error:`, retval);
       loadingGroupsList.value = false;
