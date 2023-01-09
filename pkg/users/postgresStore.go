@@ -17,8 +17,11 @@ import (
 var ErrUsernameNotFound = errors.New("username does not exist")
 
 const (
-	usersList = "SELECT id, name, email, username, creator, create_time, is_admin, is_locked, is_active FROM go_user ORDER BY id;"
-	usersGet  = `
+	orgunitType     = "CREATE TYPE  orgunit_type AS ENUM ('Entreprise', 'Direction', 'Service', 'Office', 'Bureau', 'Unité', 'Division');"
+	orgunitTypeList = "SELECT UNNEST(enum_range(null::orgunit_type)) AS orgunit;"
+	orgUnitsCount   = "SELECT COUNT(*) FROM org_unit"
+	usersList       = "SELECT id, name, email, username, creator, create_time, is_admin, is_locked, is_active FROM go_user ORDER BY id;"
+	usersGet        = `
 SELECT id, name, email, username,
        password_hash, external_id, orgunit_id, groups_id, phone, is_locked, is_admin,
        create_time, creator, last_modification_time, last_modification_user, 
@@ -192,6 +195,16 @@ func NewPgxDB(dbConnectionString string, maxConnectionsInPool int, log *log.Logg
 			return nil, errors.New("unable to create the table «go_group» ")
 		}
 		log.Printf("SUCCESS: «go_group» table was created rows affected : %v", int(commandTag.RowsAffected()))
+	}
+	var numberOfOrgUnits int
+	errOrgUnitsTable := pgxPool.Conn.QueryRow(context.Background(), orgUnitsCount).Scan(&numberOfOrgUnits)
+	if errOrgUnitsTable != nil {
+		commandTag, err := pgxPool.Conn.Exec(context.Background(), orgunitType)
+		if err != nil {
+			log.Printf("ERROR: problem creating the «orgunit_type» type : %v", err)
+			return nil, errors.New("unable to create the type «orgunit_type» ")
+		}
+		log.Printf("SUCCESS: «go_org_unit» table was created rows affected : %v", int(commandTag.RowsAffected()))
 	}
 
 	adminUser := config.GetAdminUserFromFromEnv("admin")
