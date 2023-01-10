@@ -14,7 +14,7 @@ const (
 				VALUES 	('GO_USER','public','go_user',$1) RETURNING id;`
 )
 
-// Storage is an interface to different implementation of persistence for Users
+// Storage is an interface to different implementation of persistence for Users/Groups
 type Storage interface {
 	// List returns the list of existing users with the given offset and limit.
 	List(offset, limit int) ([]*UserList, error)
