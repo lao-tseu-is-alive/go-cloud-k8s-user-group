@@ -19,6 +19,11 @@ func TestToKebabCase(t *testing.T) {
 			want: "go-cloud-k8s-user-group",
 		},
 		{
+			name: "it should return a correct kebab case of string with words in Upper",
+			args: args{str: "goCloudK8sUserGROUP"},
+			want: "go-cloud-k8s-user-group",
+		},
+		{
 			name: "it should return an empty string for a string with space",
 			args: args{str: "  "},
 			want: "",
@@ -45,6 +50,11 @@ func TestToSnakeCase(t *testing.T) {
 		{
 			name: "it should return a correct snake case of string",
 			args: args{str: "goCloudK8sUserGroup"},
+			want: "go_cloud_k8s_user_group",
+		},
+		{
+			name: "it should return a correct snake case of string with UPPER words ",
+			args: args{str: "goCloudK8sUserGROUP"},
 			want: "go_cloud_k8s_user_group",
 		},
 		{

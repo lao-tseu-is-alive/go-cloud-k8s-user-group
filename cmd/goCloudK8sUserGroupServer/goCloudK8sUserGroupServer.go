@@ -30,7 +30,7 @@ func main() {
 	l.Printf("INFO: 'Starting %s v:%s  rev:%s  build: %s'", version.APP, version.VERSION, version.REVISION, version.BuildStamp)
 	l.Printf("INFO: 'Repository url: https://%s'", version.REPOSITORY)
 	dbDsn, err := config.GetPgDbDsnUrlFromEnv(defaultDBIp, defaultDBPort,
-		tools.ToSnakeCase(version.APP), tools.ToSnakeCase(version.APP), defaultDBSslMode)
+		tools.ToSnakeCase(version.APP), version.AppSnake, defaultDBSslMode)
 	if err != nil {
 		l.Fatalf("💥💥 error doing config.GetPgDbDsnUrlFromEnv. error: %v\n", err)
 	}

@@ -1,5 +1,6 @@
 #!make
 SHELL := /bin/bash
+DOCKER_BIN := nerdctl
 VER_SOURCE_CODE := pkg/version/version.go
 APP_NAME := $(shell grep -E 'APP\s+=' $(VER_SOURCE_CODE)| awk '{ print $$3 }'  | tr -d '"')
 APP_VERSION := $(shell grep -E 'VERSION\s+=' $(VER_SOURCE_CODE)| awk '{ print $$3 }'  | tr -d '"')
@@ -11,7 +12,7 @@ ifneq ("$(wildcard .env)","")
 	# next line allows to export env variables to external process (like your Go app)
 	export $(shell sed 's/=.*//' .env)
 else
-	$(warning .env file was not found using default values forundefined variables )
+	$(warning .env file was not found using default values for undefined variables )
 	ENV_EXISTS := "FALSE"
 	DB_DRIVER ?= postgres
 	DB_HOST ?= 127.0.0.1
@@ -38,7 +39,7 @@ ifeq ($(ENV_EXISTS),"TRUE")
 else
 	# using golang-migrate https://github.com/golang-migrate/migrate/tree/master/cmd/migrate
 	# here with the docker file so no need to install it
-	MIGRATE := docker run -v $(shell pwd)/db/migrations:/migrations --network host migrate/migrate:v4.10.0 -path=/db/migrations/ -database "$(APP_DSN)"
+	MIGRATE := $(DOCKER_BIN) run -v $(shell pwd)/db/migrations:/migrations --network host migrate/migrate:v4.10.0 -path=/db/migrations/ -database "$(APP_DSN)"
 endif
 
 # Make is verbose in Linux. Make it silent.
@@ -47,12 +48,12 @@ MAKEFLAGS += --silent
 # because it is the first target in this Makefile this is also the default rule
 .PHONY: run
 ## run:	will run a dev version of your Go application [DEFAULT RULE]
-run: check-env
+run: check-env openapi-codegen
 	go run $(LDFLAGS) cmd/$(APP_EXECUTABLE)/${APP_EXECUTABLE}.go
 
 .PHONY: build
 ## build:	will compile your server app binary and place it in the bin sub-folder
-build: check-env clean test
+build: check-env clean test openapi-codegen
 	@echo "  >  Building your app binary inside bin directory..."
 	CGO_ENABLED=0 go build ${LDFLAGS} -a -o bin/$(APP_EXECUTABLE) cmd/$(APP_EXECUTABLE)/main.go
 
@@ -70,7 +71,7 @@ clean:
 
 .PHONY: release
 ## release:	will build & tag a clean repo with a version release and push the tag to the remote git
-release:
+release: build
 	@echo "  >  Preparing release $(APP_EXECUTABLE) v$(APP_VERSION) rev: $(APP_REVISION) ..."
 ifeq ($(shell git status -s),)  # check if repo is clean
 	echo "OK : your repo is clean"
@@ -112,11 +113,35 @@ openapi-codegen: dependencies-openapi
 	oapi-codegen --old-config-style -templates templates_oapi-codegen -generate server -o pkg/users/users_server.gen.go -package users api/users.yaml
 
 
+.PHONY: build-docker
+## build-docker:	will build a local Docker multi-stage image from your app
+build-docker:
+	echo "  >  Building your container image using scripts/01_build_image_locally.sh"
+	$(shell ./scripts/01_build_image_locally.sh)
+
+.PHONY: create-docker-network
+## create-docker-network:	will build a local Docker network bridge for your app
+create-docker-network:
+	$(DOCKER_BIN) network create -d bridge todosnetwork
+
+
+.PHONY: run-docker
+## run-docker:	will run your local Docker image with a local postgres
+run-docker: build-docker db-docker-init-data
+	$(DOCKER_BIN) run --rm  --env-file=.env --network todosnetwork -e DB_HOST=db  todos-server:$(VERSION)
+
+.PHONY: run-shell-docker
+## run-shell-docker:	will run a shell in your local Docker image
+run-shell-docker: build-docker
+	$(DOCKER_BIN) run --rm -it todos-server:$(VERSION) sh
+
+
+
 .PHONY: xo-codegen
-## xo-codegen:	will generate helper Go code for database queries
+## xo-codegen:	will generate helper Go code for database queries in models directory
 xo-codegen: dependencies-xo
-xo schema schema -s public --go-pkg=users --src templates_xo -o models ${DB_DRIVER}://${DB_USER}:=@${DB_HOST}/${DB_NAME}
-#xo schema schema -s public --go-pkg=users --src templates_xo -o pkg/users ${DB_DRIVER}://${DB_USER}:=@${DB_HOST}/${DB_NAME}
+	xo schema schema -s public --go-pkg=users --src templates_xo -o models ${DB_DRIVER}://${DB_USER}:=@${DB_HOST}/${DB_NAME}
+	#xo schema schema -s public --go-pkg=users --src templates_xo -o pkg/users ${DB_DRIVER}://${DB_USER}:=@${DB_HOST}/${DB_NAME}
 
 .PHONY: help
 help: Makefile
