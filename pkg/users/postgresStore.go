@@ -73,13 +73,27 @@ func NewPgxDB(dbConnectionString string, maxConnectionsInPool int, log *log.Logg
 		}
 		log.Printf("SUCCESS: «go_group» table was created rows affected : %v", int(commandTag.RowsAffected()))
 	}
-	var numberOfOrgUnits int
-	errOrgUnitsTable := pgxPool.Conn.QueryRow(context.Background(), orgUnitsCount).Scan(&numberOfOrgUnits)
-	if errOrgUnitsTable != nil {
+	isOrgUnitTypeAlreadyThere := false
+	err = pgxPool.Conn.QueryRow(context.Background(), orgunitTypeExist).Scan(&isOrgUnitTypeAlreadyThere)
+	if err != nil {
+		log.Printf("error : checking orgunitTypeExist unexpectedly failed. args : (%v), error : %v\n", orgunitTypeExist, err)
+		return nil, errors.New("unable to check if type «orgunit_type» already exists")
+	}
+	if isOrgUnitTypeAlreadyThere != true {
 		commandTag, err := pgxPool.Conn.Exec(context.Background(), orgunitType)
 		if err != nil {
 			log.Printf("ERROR: problem creating the «orgunit_type» type : %v", err)
 			return nil, errors.New("unable to create the type «orgunit_type» ")
+		}
+		log.Printf("SUCCESS: «orgunit_type» type was created, rows affected : %v", int(commandTag.RowsAffected()))
+	}
+	var numberOfOrgUnits int
+	errOrgUnitsTable := pgxPool.Conn.QueryRow(context.Background(), orgUnitsCount).Scan(&numberOfOrgUnits)
+	if errOrgUnitsTable != nil {
+		commandTag, err := pgxPool.Conn.Exec(context.Background(), orgUnitsCreateTable)
+		if err != nil {
+			log.Printf("ERROR: problem creating the «go_orgunit» table : %v", err)
+			return nil, errors.New("unable to create the table «go_orgunit» ")
 		}
 		log.Printf("SUCCESS: «go_org_unit» table was created rows affected : %v", int(commandTag.RowsAffected()))
 	}
@@ -100,6 +114,7 @@ func NewPgxDB(dbConnectionString string, maxConnectionsInPool int, log *log.Logg
 
 	if numberOfUsers > 0 {
 		log.Printf("INFO: 'database contains %d records in «go_user»'", numberOfUsers)
+		log.Printf("INFO: 'will run updateAdminUser for adminUser:%s  in «go_user»'", adminUser)
 		commandTag, err := pgxPool.Conn.Exec(context.Background(), updateAdminUser, adminUser, goHash)
 		if err != nil {
 			log.Printf("ERROR: updateAdminUser adminUser:(%s) hash : %s unexpectedly failed. error : %v", adminUser, goHash, err)
