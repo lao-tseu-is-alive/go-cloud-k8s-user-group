@@ -83,6 +83,7 @@ func NewGoHttpServer(listenAddress string, l *log.Logger, store users.Storage, w
 		JwtDuration: tokenDuration,
 		JwtSecret:   []byte(signingKey),
 	}
+	//TODO: verify if tokenDuration is valid and where it is checked
 	e.HideBanner = true
 	/* will try a better way to handle 404 */
 	e.HTTPErrorHandler = func(err error, c echo.Context) {

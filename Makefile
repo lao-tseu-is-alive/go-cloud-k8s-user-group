@@ -1,5 +1,6 @@
 #!make
 SHELL := /bin/bash
+# on Linux with rancher-desktop no need for docker
 DOCKER_BIN := nerdctl
 VER_SOURCE_CODE := pkg/version/version.go
 APP_NAME := $(shell grep -E 'APP\s+=' $(VER_SOURCE_CODE)| awk '{ print $$3 }'  | tr -d '"')
@@ -17,8 +18,8 @@ else
 	DB_DRIVER ?= postgres
 	DB_HOST ?= 127.0.0.1
 	DB_PORT ?= 5432
-	DB_NAME ?= todos
-	DB_USER ?= todos
+	DB_NAME ?= go_cloud_k8s_user_group
+	DB_USER ?= go_cloud_k8s_user_group
 	# DB_PASSWORD should be defined in your env or in github secrets
 	DB_SSL_MODE ?= disable
 endif
@@ -122,18 +123,18 @@ build-docker:
 .PHONY: create-docker-network
 ## create-docker-network:	will build a local Docker network bridge for your app
 create-docker-network:
-	$(DOCKER_BIN) network create -d bridge todosnetwork
+	$(DOCKER_BIN) network create -d bridge usersnetwork
 
 
 .PHONY: run-docker
 ## run-docker:	will run your local Docker image with a local postgres
 run-docker: build-docker db-docker-init-data
-	$(DOCKER_BIN) run --rm  --env-file=.env --network todosnetwork -e DB_HOST=db  todos-server:$(VERSION)
+	$(DOCKER_BIN) run --rm  --env-file=.env --network usersnetwork -e DB_HOST=db  users-server:$(VERSION)
 
 .PHONY: run-shell-docker
 ## run-shell-docker:	will run a shell in your local Docker image
 run-shell-docker: build-docker
-	$(DOCKER_BIN) run --rm -it todos-server:$(VERSION) sh
+	$(DOCKER_BIN) run --rm -it users-server:$(VERSION) sh
 
 
 
