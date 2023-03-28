@@ -3,8 +3,8 @@ package users
 import (
 	"errors"
 	"fmt"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/database"
 	"log"
-	"runtime"
 )
 
 const (
@@ -52,19 +52,20 @@ type Storage interface {
 	GetGroup(id int32) (*Group, error)
 }
 
-func GetStorageInstance(dbDriver, dbConnectionString string, log *log.Logger) (Storage, error) {
-	var db Storage
+func GetStorageInstance(dbDriver string, db database.DB, l *log.Logger) (Storage, error) {
+	var store Storage
 	var err error
 	switch dbDriver {
-	case "postgres":
-		db, err = NewPgxDB(dbConnectionString, runtime.NumCPU(), log)
+	case "pgx":
+		store, err = NewPgxDB(db, l)
 		if err != nil {
-			return nil, fmt.Errorf("error doing NewPgxDB(dbConnectionString : %w", err)
+			return nil, fmt.Errorf("error doing NewPgxDB(pgConn : %w", err)
 		}
+
 	default:
 		return nil, errors.New("unsupported DB driver type")
 	}
-	return db, nil
+	return store, nil
 }
 
 func GetErrorF(errMsg string, err error) error {

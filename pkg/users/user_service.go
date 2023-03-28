@@ -3,6 +3,7 @@ package users
 import (
 	"encoding/json"
 	"fmt"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/database"
 	"log"
 	"net/http"
 	"time"
@@ -14,6 +15,7 @@ import (
 
 type Service struct {
 	Log         *log.Logger
+	dbConn      database.DB
 	Store       Storage
 	JwtSecret   []byte
 	JwtDuration int
@@ -263,7 +265,7 @@ func (s Service) GetLogin(ctx echo.Context) error {
 // with the received token you can try : curl  -H "Authorization: Bearer $token "  http://localhost:8888/restricted
 func (s Service) LoginUser(ctx echo.Context) error {
 	s.Log.Println("trace: entering LoginUser()")
-	//TODO: check if redirect_uri is passed as paremeter in url, if it is then at the end do a redirect to this uri with the response
+	//TODO: check if redirect_uri is passed as parameter in url, if it is then at the end do a redirect to this uri with the response
 	uLogin := new(UserLogin)
 	if err := ctx.Bind(uLogin); err != nil {
 		return echo.NewHTTPError(http.StatusBadRequest, "invalid user login or json format in request body")
@@ -329,7 +331,7 @@ func (s Service) LoginUser(ctx echo.Context) error {
 	}
 	msg := fmt.Sprintf("LoginUser(%s) succesfull login for user id (%d)", uLogin.Username, idUser)
 	s.Log.Printf(msg)
-	//TODO: check if redirect_uri was passed as paremeter in url, do the redirect, store the token in session cookie
+	//TODO: check if redirect_uri was passed as parameter in url, do the redirect, store the token in session cookie
 	return ctx.JSON(http.StatusOK, echo.Map{
 		"token": token.String(),
 	})
