@@ -8,9 +8,8 @@ import (
 	"github.com/jackc/pgx/v4/pgxpool"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/config"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/database"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/crypto"
-	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/version"
-	"log"
 	"time"
 )
 
@@ -19,11 +18,11 @@ var ErrUsernameNotFound = errors.New("username does not exist")
 type PGX struct {
 	Conn *pgxpool.Pool
 	dbi  database.DB
-	log  *log.Logger
+	log  golog.MyLogger
 }
 
 // NewPgxDB will instantiate a new storage of type postgres and ensure schema exist
-func NewPgxDB(db database.DB, log *log.Logger) (Storage, error) {
+func NewPgxDB(db database.DB, log golog.MyLogger) (Storage, error) {
 	var psql PGX
 	pgConn, err := db.GetPGConn()
 	if err != nil {
@@ -35,99 +34,47 @@ func NewPgxDB(db database.DB, log *log.Logger) (Storage, error) {
 	var numberOfServicesSchema int
 	errMetaTable := pgConn.QueryRow(context.Background(), countMetaUserServiceSQL).Scan(&numberOfServicesSchema)
 	if errMetaTable != nil {
-		log.Printf("WARNING: problem counting the rows in metadata table : %v", errMetaTable)
+		log.Warn("problem counting the rows in metadata table : %v", errMetaTable)
 		return nil, errors.New("unable to countMetaUserServiceSQL")
-	}
-	if numberOfServicesSchema < 1 {
-		log.Printf("WARNING: database does not contain this service in the metadata table, will try to insert it  ! ")
-		var lastInsertId int = 0
-		err := pgConn.QueryRow(context.Background(), insertMetaUserService, version.VERSION).Scan(&lastInsertId)
-		if err != nil {
-			log.Printf("ERROR: insertMetaUserService ver:(%s) unexpectedly failed. error : %v", version.VERSION, err)
-			return nil, errors.New("unable to insert metadata for the service table «go_user» ")
-		}
-		log.Printf("INFO: insertMetaUserService ver:(%s) created with id : %d", version.VERSION, lastInsertId)
-	}
-	var numberOfUsers int
-	errUsersTable := pgConn.QueryRow(context.Background(), usersCount).Scan(&numberOfUsers)
-	if errUsersTable != nil {
-		log.Printf("WARNING: problem counting the rows in «go_user» table : %v", errUsersTable)
-		log.Printf("WARNING: 'the database does not contain the table «go_user»  wil try to create it!'")
-		commandTag, err := pgConn.Exec(context.Background(), usersCreateTable)
-		if err != nil {
-			log.Printf("ERROR: problem creating the «go_user» table : %v", err)
-			return nil, errors.New("unable to create the table «go_user» ")
-		}
-		log.Printf("SUCCESS: «go_user» table was created rows affected : %v", int(commandTag.RowsAffected()))
-	}
-	var numberOfGroups int
-	errGroupsTable := pgConn.QueryRow(context.Background(), groupsCount).Scan(&numberOfGroups)
-	if errGroupsTable != nil {
-		log.Printf("WARNING: problem counting the rows in «go_group» table : %v", errUsersTable)
-		log.Printf("WARNING: 'the database does not contain the table «go_group»  wil try to create it!'")
-		commandTag, err := pgConn.Exec(context.Background(), groupsCreateTable)
-		if err != nil {
-			log.Printf("ERROR: problem creating the «go_group» table : %v", err)
-			return nil, errors.New("unable to create the table «go_group» ")
-		}
-		log.Printf("SUCCESS: «go_group» table was created rows affected : %v", int(commandTag.RowsAffected()))
-	}
-	isOrgUnitTypeAlreadyThere := false
-	err = pgConn.QueryRow(context.Background(), orgunitTypeExist).Scan(&isOrgUnitTypeAlreadyThere)
-	if err != nil {
-		log.Printf("error : checking orgunitTypeExist unexpectedly failed. args : (%v), error : %v\n", orgunitTypeExist, err)
-		return nil, errors.New("unable to check if type «orgunit_type» already exists")
-	}
-	if isOrgUnitTypeAlreadyThere != true {
-		commandTag, err := pgConn.Exec(context.Background(), orgunitType)
-		if err != nil {
-			log.Printf("ERROR: problem creating the «orgunit_type» type : %v", err)
-			return nil, errors.New("unable to create the type «orgunit_type» ")
-		}
-		log.Printf("SUCCESS: «orgunit_type» type was created, rows affected : %v", int(commandTag.RowsAffected()))
-	}
-	var numberOfOrgUnits int
-	errOrgUnitsTable := pgConn.QueryRow(context.Background(), orgUnitsCount).Scan(&numberOfOrgUnits)
-	if errOrgUnitsTable != nil {
-		commandTag, err := pgConn.Exec(context.Background(), orgUnitsCreateTable)
-		if err != nil {
-			log.Printf("ERROR: problem creating the «go_orgunit» table : %v", err)
-			return nil, errors.New("unable to create the table «go_orgunit» ")
-		}
-		log.Printf("SUCCESS: «go_org_unit» table was created rows affected : %v", int(commandTag.RowsAffected()))
 	}
 
 	adminUser := config.GetAdminUserFromFromEnv("admin")
 	adminPassword, err := config.GetAdminPasswordFromFromEnv()
 	if err != nil {
-		log.Printf("ERROR: 'GetAdminPasswordFromFromEnv returned error : %v'", err)
+		log.Error("GetAdminPasswordFromFromEnv returned error : %v'", err)
 		return nil, errors.New("unable to retrieve a valid admin password GetAdminPasswordFromFromEnv")
 	}
 	var lastInsertId int = 0
 	passwordHash := crypto.Sha256Hash(adminPassword)
 	goHash, err := crypto.HashAndSalt(passwordHash)
 	if err != nil {
-		log.Printf("ERROR: crypto.HashAndSalt unexpectedly failed. error : %v", err)
+		log.Error("crypto.HashAndSalt unexpectedly failed. error : %v", err)
 		return nil, errors.New("unable to calculate hash for the admin password ")
+	}
+	var numberOfUsers int
+	errUsersTable := pgConn.QueryRow(context.Background(), usersCount).Scan(&numberOfUsers)
+	if errUsersTable != nil {
+		log.Error("Unable to retrieve the number of users error: %v", err)
+		return nil, err
 	}
 
 	if numberOfUsers > 0 {
-		log.Printf("INFO: 'database contains %d records in «go_user»'", numberOfUsers)
-		log.Printf("INFO: 'will run updateAdminUser for adminUser:%s  in «go_user»'", adminUser)
+		log.Info("'database contains %d records in «go_user»'", numberOfUsers)
+		log.Info("'will run updateAdminUser for adminUser:%s  in «go_user»'", adminUser)
 		commandTag, err := pgConn.Exec(context.Background(), updateAdminUser, adminUser, goHash)
 		if err != nil {
-			log.Printf("ERROR: updateAdminUser adminUser:(%s) hash : %s unexpectedly failed. error : %v", adminUser, goHash, err)
+			log.Error("updateAdminUser adminUser:(%s) hash : %s unexpectedly failed. error : %v", adminUser, goHash, err)
 			return nil, errors.New("unable to update adminUser in table «go_user» ")
 		}
-		log.Printf("INFO: 'update %d row with admin user %s  in «go_user»'", int(commandTag.RowsAffected()), adminUser)
+		log.Info("'update %d row with admin user %s  in «go_user»'", int(commandTag.RowsAffected()), adminUser)
 	} else {
-		log.Printf("WARNING: '«go_user» contain %d records : creating initial admin user: %s'", numberOfUsers, adminUser)
+		log.Warn("'«go_user» contain %d records : creating initial admin user: %s'", numberOfUsers, adminUser)
 		err = pgConn.QueryRow(context.Background(), insertAdminUser, adminUser, goHash).Scan(&lastInsertId)
 		if err != nil {
-			log.Printf("ERROR: insertAdminUser adminUser:(%s) hash : %s unexpectedly failed. error : %v", adminUser, goHash, err)
+			log.Error("insertAdminUser adminUser:(%s) hash : %s unexpectedly failed. error : %v", adminUser, goHash, err)
 			return nil, errors.New("unable to insert adminUser in table «go_user» ")
 		}
-		log.Printf("INFO: insertAdminUser adminUser:(%s) created with id : %d", adminUser, lastInsertId)
+		log.Info("insertAdminUser adminUser:(%s) created with id : %d", adminUser, lastInsertId)
 	}
 
 	return &psql, err
@@ -135,12 +82,12 @@ func NewPgxDB(db database.DB, log *log.Logger) (Storage, error) {
 
 // Create will store the new user in the store
 func (db *PGX) Create(u User) (*User, error) {
-	db.log.Printf("trace : entering Create(%q,%q)", u.Name, u.Username)
+	db.log.Debug("trace : entering Create(%q,%q)", u.Name, u.Username)
 	var lastInsertId int = 0
 
 	goHash, err := crypto.HashAndSalt(u.PasswordHash)
 	if err != nil {
-		db.log.Printf("error : Create(%q) had an error doing crypto.HashAndSalt. error : %v", u.Name, err)
+		db.log.Error("Create(%q) had an error doing crypto.HashAndSalt. error : %v", u.Name, err)
 		return nil, err
 	}
 	u.PasswordHash = goHash
@@ -148,10 +95,10 @@ func (db *PGX) Create(u User) (*User, error) {
 		u.Name, u.Email, u.Username, u.PasswordHash, &u.ExternalId, &u.OrgunitId, &u.GroupsId, &u.Phone, //$1-$7
 		u.IsAdmin, u.Creator, &u.Comment).Scan(&lastInsertId)
 	if err != nil {
-		db.log.Printf("error : Create(%q) unexpectedly failed. error : %v", u.Name, err)
+		db.log.Error("Create(%q) unexpectedly failed. error : %v", u.Name, err)
 		return nil, err
 	}
-	db.log.Printf("info : Create(%q) created with id : %v", u.Name, lastInsertId)
+	db.log.Info(" Create(%q) created with id : %v", u.Name, lastInsertId)
 
 	// if we get to here all is good, so let's retrieve a fresh copy to send it back
 	createdUser, err := db.Get(int32(lastInsertId))
@@ -163,16 +110,16 @@ func (db *PGX) Create(u User) (*User, error) {
 
 // List will retrieve all users in the store
 func (db *PGX) List(offset, limit int) ([]*UserList, error) {
-	db.log.Println("trace : entering List()")
+	db.log.Debug("trace : entering List()")
 	var res []*UserList
 
 	err := pgxscan.Select(context.Background(), db.Conn, &res, usersList)
 	if err != nil {
-		db.log.Printf("error : List pgxscan.Select unexpectedly failed, error : %v", err)
+		db.log.Error("List pgxscan.Select unexpectedly failed, error : %v", err)
 		return nil, err
 	}
 	if res == nil {
-		db.log.Println("info : List returned no results ")
+		db.log.Info(" List returned no results ")
 		return nil, errors.New("records not found")
 	}
 
@@ -181,15 +128,15 @@ func (db *PGX) List(offset, limit int) ([]*UserList, error) {
 
 // Get will retrieve one user with given id
 func (db *PGX) Get(id int32) (*User, error) {
-	db.log.Printf("trace : entering Get(%d)", id)
+	db.log.Debug("trace : entering Get(%d)", id)
 	res := &User{}
 	err := pgxscan.Get(context.Background(), db.Conn, res, usersGet, id)
 	if err != nil {
-		db.log.Printf("error : Get(%d) pgxscan.Select unexpectedly failed, error : %v", id, err)
+		db.log.Error("Get(%d) pgxscan.Select unexpectedly failed, error : %v", id, err)
 		return nil, err
 	}
 	if res == nil {
-		db.log.Printf("info : Get(%d) returned no results ", id)
+		db.log.Info(" Get(%d) returned no results ", id)
 		return nil, errors.New("records not found")
 	}
 	return res, nil
@@ -197,10 +144,10 @@ func (db *PGX) Get(id int32) (*User, error) {
 
 // GetMaxId returns the maximum value of users id existing in store.
 func (db *PGX) GetMaxId() (int32, error) {
-	db.log.Println("trace : entering GetMaxId()")
+	db.log.Debug("trace : entering GetMaxId()")
 	existingMaxId, err := db.dbi.GetQueryInt(usersMaxId)
 	if err != nil {
-		db.log.Printf("getMaxId() could not be retrieved from DB. failed db.Query err: %v", err)
+		db.log.Error("getMaxId() could not be retrieved from DB. failed db.Query err: %v", err)
 		return 0, err
 	}
 	return int32(existingMaxId), nil
@@ -208,27 +155,27 @@ func (db *PGX) GetMaxId() (int32, error) {
 
 // Exist returns true only if a users with the specified id exists in store.
 func (db *PGX) Exist(id int32) bool {
-	db.log.Printf("trace : entering Exist(%d)", id)
+	db.log.Debug("trace : entering Exist(%d)", id)
 	count, err := db.dbi.GetQueryInt(usersExist, id)
 	if err != nil {
-		db.log.Printf("error: Exist(%d) could not be retrieved from DB. failed db.Query err: %v", id, err)
+		db.log.Error("Exist(%d) could not be retrieved from DB. failed db.Query err: %v", id, err)
 		return false
 	}
 	if count > 0 {
-		db.log.Printf("info : Exist(%d) id does exist  count:%v", id, count)
+		db.log.Info(" Exist(%d) id does exist  count:%v", id, count)
 		return true
 	} else {
-		db.log.Printf("info : Exist(%d) id does not exist count:%v", id, count)
+		db.log.Info(" Exist(%d) id does not exist count:%v", id, count)
 		return false
 	}
 }
 
 // Count returns the number of users stored in DB
 func (db *PGX) Count() (int32, error) {
-	db.log.Println("trace : entering Count()")
+	db.log.Debug("trace : entering Count()")
 	count, err := db.dbi.GetQueryInt(usersCount)
 	if err != nil {
-		db.log.Printf("error: Count() could not be retrieved from DB. failed db.Query err: %v", err)
+		db.log.Error("Count() could not be retrieved from DB. failed db.Query err: %v", err)
 		return 0, err
 	}
 	return int32(count), nil
@@ -236,7 +183,7 @@ func (db *PGX) Count() (int32, error) {
 
 // Update the users stored in DB with given id and other information in struct
 func (db *PGX) Update(id int32, user User) (*User, error) {
-	db.log.Printf("trace : entering Update(%d)", id)
+	db.log.Debug("trace : entering Update(%d)", id)
 	var rowsAffected int = 0
 	var err error
 	now := time.Now()
@@ -251,9 +198,9 @@ func (db *PGX) Update(id int32, user User) (*User, error) {
 		if err != nil {
 			return nil, GetErrorF("error: Update() reset password failed", err)
 		}
-		db.log.Printf("info : password change successful for user id [%d]", id)
+		db.log.Info(" password change successful for user id [%d]", id)
 	}
-	db.log.Printf("info : just before Update(%+v)", user)
+	db.log.Info(" just before Update(%+v)", user)
 	const usersUpdate = `
 UPDATE go_user
 SET name                   = $1,
@@ -294,7 +241,7 @@ WHERE id = $15;
 
 // Delete the users stored in DB with given id
 func (db *PGX) Delete(id int32) error {
-	db.log.Printf("trace : entering Delete(%d)", id)
+	db.log.Debug("trace : entering Delete(%d)", id)
 	rowsAffected, err := db.dbi.ExecActionQuery(usersDelete, id)
 	if err != nil {
 		return GetErrorF("error : user could not be deleted", err)
@@ -308,17 +255,17 @@ func (db *PGX) Delete(id int32) error {
 
 // FindUsername retrieves the user id for the given username or err if not found.
 func (db *PGX) FindUsername(username string) (int32, error) {
-	db.log.Printf("trace : entering FindUsername(%s)", username)
+	db.log.Debug("trace : entering FindUsername(%s)", username)
 	idUser, err := db.dbi.GetQueryInt(usernameFind, username)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			db.log.Printf("warning: FindUsername(%s) did not find any rows with this username", username)
+			db.log.Warn("FindUsername(%s) did not find any rows with this username", username)
 			return 0, ErrUsernameNotFound
 		}
-		db.log.Printf("error: FindUsername(%s) could not be retrieved from DB. failed db.Query err: %v", username, err)
+		db.log.Error("FindUsername(%s) could not be retrieved from DB. failed db.Query err: %v", username, err)
 		return 0, err
 	}
-	db.log.Printf("info : FindUsername(%s) id was found :%v", username, idUser)
+	db.log.Info(" FindUsername(%s) id was found :%v", username, idUser)
 	return int32(idUser), nil
 }
 
@@ -332,7 +279,7 @@ func (db *PGX) IsUserAdmin(idUser int32) bool {
 	var isAdmin bool
 	isAdmin, err := db.dbi.GetQueryBool("SELECT is_admin FROM go_user WHERE id = $1", idUser)
 	if err != nil {
-		db.log.Printf("error: IsUserAdmin(%d) could not be retrieved from DB. failed db.Query err: %v", idUser, err)
+		db.log.Error("IsUserAdmin(%d) could not be retrieved from DB. failed db.Query err: %v", idUser, err)
 		return false
 	}
 	return isAdmin
@@ -343,7 +290,7 @@ func (db *PGX) IsUserActive(idUser int32) bool {
 	var isActive bool
 	isActive, err := db.dbi.GetQueryBool("SELECT is_active FROM go_user WHERE id = $1", idUser)
 	if err != nil {
-		db.log.Printf("error: IsUserActive(%d) could not be retrieved from DB. failed db.Query err: %v", idUser, err)
+		db.log.Error("IsUserActive(%d) could not be retrieved from DB. failed db.Query err: %v", idUser, err)
 		return false
 	}
 	return isActive
@@ -351,10 +298,10 @@ func (db *PGX) IsUserActive(idUser int32) bool {
 
 // ResetPassword the user password stored in DB for given id
 func (db *PGX) ResetPassword(id int32, passwordHash string, idCurrentUser int) error {
-	db.log.Printf("trace : entering ResetPassword(%d)", id)
+	db.log.Debug("trace : entering ResetPassword(%d)", id)
 	goHash, err := crypto.HashAndSalt(passwordHash)
 	if err != nil {
-		db.log.Printf("error : ResetPassword(%d) had an error doing crypto.HashAndSalt. error : %v", id, err)
+		db.log.Error("ResetPassword(%d) had an error doing crypto.HashAndSalt. error : %v", id, err)
 		return err
 	}
 	rowsAffected, err := db.dbi.ExecActionQuery(
@@ -372,7 +319,7 @@ func (db *PGX) ResetPassword(id int32, passwordHash string, idCurrentUser int) e
 
 // CreateGroup saves a new group in the storage.
 func (db *PGX) CreateGroup(g Group) (*Group, error) {
-	db.log.Printf("trace : entering CreateGroup(%q)", g.Name)
+	db.log.Debug("trace : entering CreateGroup(%q)", g.Name)
 	if len(g.Name) < 1 {
 		return nil, errors.New("group.name cannot be empty")
 	}
@@ -384,10 +331,10 @@ func (db *PGX) CreateGroup(g Group) (*Group, error) {
 	err := db.Conn.QueryRow(context.Background(), groupCreate,
 		g.Name, g.Creator, &g.Comment).Scan(&lastInsertId)
 	if err != nil {
-		db.log.Printf("error : CreateGroup(%q) unexpectedly failed. error : %v", g.Name, err)
+		db.log.Error("CreateGroup(%q) unexpectedly failed. error : %v", g.Name, err)
 		return nil, err
 	}
-	db.log.Printf("info : CreateGroup(%q) created with id : %v", g.Name, lastInsertId)
+	db.log.Info(" CreateGroup(%q) created with id : %v", g.Name, lastInsertId)
 
 	// if we get to here all is good, so let's retrieve a fresh copy to send it back
 	created, err := db.GetGroup(int32(lastInsertId))
@@ -399,15 +346,15 @@ func (db *PGX) CreateGroup(g Group) (*Group, error) {
 
 // GetGroup returns the group with the specified users ID.
 func (db *PGX) GetGroup(id int32) (*Group, error) {
-	db.log.Printf("trace : entering GetGroup(%d)", id)
+	db.log.Debug("trace : entering GetGroup(%d)", id)
 	res := &Group{}
 	err := pgxscan.Get(context.Background(), db.Conn, res, groupGet, id)
 	if err != nil {
-		db.log.Printf("error : GetGroup(%d) Select unexpectedly failed, error : %v", id, err)
+		db.log.Error("GetGroup(%d) Select unexpectedly failed, error : %v", id, err)
 		return nil, err
 	}
 	if res == nil {
-		db.log.Printf("info : GetGroup(%d) returned no results ", id)
+		db.log.Info(" GetGroup(%d) returned no results ", id)
 		return nil, errors.New("records not found")
 	}
 	return res, nil
@@ -415,16 +362,16 @@ func (db *PGX) GetGroup(id int32) (*Group, error) {
 
 // ListGroup will retrieve all groups in the store
 func (db *PGX) ListGroup(offset, limit int) ([]*GroupList, error) {
-	db.log.Println("trace : entering ListGroup()")
+	db.log.Debug("trace : entering ListGroup()")
 	var res []*GroupList
 
 	err := pgxscan.Select(context.Background(), db.Conn, &res, groupList)
 	if err != nil {
-		db.log.Printf("error : ListGroup Select unexpectedly failed, error : %v", err)
+		db.log.Error("ListGroup Select unexpectedly failed, error : %v", err)
 		return nil, err
 	}
 	if res == nil {
-		db.log.Println("info : ListGroup query returned no results ")
+		db.log.Info(" ListGroup query returned no results ")
 		// return an empty array
 		return make([]*GroupList, 1), nil
 	}
@@ -434,7 +381,7 @@ func (db *PGX) ListGroup(offset, limit int) ([]*GroupList, error) {
 
 // DeleteGroup removes the group with given ID from the storage.
 func (db *PGX) DeleteGroup(id int32) error {
-	db.log.Printf("trace : entering DeleteGroup(%d)", id)
+	db.log.Debug("trace : entering DeleteGroup(%d)", id)
 	rowsAffected, err := db.dbi.ExecActionQuery(groupDelete, id)
 	if err != nil {
 		return GetErrorF("error : group could not be deleted", err)
@@ -447,7 +394,7 @@ func (db *PGX) DeleteGroup(id int32) error {
 
 // UpdateGroup updates the group with given ID in the storage.
 func (db *PGX) UpdateGroup(id int32, group Group) (*Group, error) {
-	db.log.Printf("trace : entering UpdateGroup(%d)", id)
+	db.log.Debug("trace : entering UpdateGroup(%d)", id)
 	// first check business rules for name field
 	if len(group.Name) < 1 {
 		return nil, errors.New("user name cannot be empty")
@@ -464,7 +411,7 @@ func (db *PGX) UpdateGroup(id int32, group Group) (*Group, error) {
 	} else {
 		group.InactivationTime = nil
 	}
-	db.log.Printf("info : just before UpdateGroup(%+v)", group)
+	db.log.Info(" just before UpdateGroup(%+v)", group)
 	rowsAffected, err = db.dbi.ExecActionQuery(groupUpdate,
 		group.Name, group.LastModificationUser, group.IsActive, &group.InactivationTime,
 		&group.InactivationReason, &group.Comment, id)

@@ -4,7 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/database"
-	"log"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
 )
 
 const (
@@ -52,7 +52,7 @@ type Storage interface {
 	GetGroup(id int32) (*Group, error)
 }
 
-func GetStorageInstance(dbDriver string, db database.DB, l *log.Logger) (Storage, error) {
+func GetStorageInstance(dbDriver string, db database.DB, l golog.MyLogger) (Storage, error) {
 	var store Storage
 	var err error
 	switch dbDriver {
