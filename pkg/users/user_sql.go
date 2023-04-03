@@ -16,7 +16,7 @@ FROM go_user WHERE id=$1;`
 	usersCreate  = `INSERT INTO go_user
 (name, email, username, password_hash, external_id, orgunit_id, groups_id, phone,
  is_locked, is_admin, create_time, creator, is_active, comment, bad_password_count)
-VALUES ($1, $2, $3, $4, $5, $6, $7, false, $8, CURRENT_TIMESTAMP,$9,true,$10,0)
+VALUES ($1, $2, $3, $4, $5, $6, $7,$8, false, $9,CURRENT_TIMESTAMP,$10,true,$11,0)
 RETURNING id;`
 
 	usersUpdate = `

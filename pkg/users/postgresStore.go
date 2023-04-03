@@ -92,7 +92,12 @@ func (db *PGX) Create(u User) (*User, error) {
 	}
 	u.PasswordHash = goHash
 	err = db.Conn.QueryRow(context.Background(), usersCreate,
-		u.Name, u.Email, u.Username, u.PasswordHash, &u.ExternalId, &u.OrgunitId, &u.GroupsId, &u.Phone, //$1-$7
+		//INSERT INTO go_user
+		//(name, email, username, password_hash, external_id, orgunit_id, groups_id, phone,
+		// is_locked, is_admin, create_time, creator, is_active, comment, bad_password_count)
+		//VALUES ($1, $2, $3, $4, $5, $6, $7,$8, false, $9,CURRENT_TIMESTAMP,$10,true,$11,0)
+		//RETURNING id;
+		u.Name, u.Email, u.Username, u.PasswordHash, &u.ExternalId, &u.OrgunitId, &u.GroupsId, &u.Phone, //$1-$8
 		u.IsAdmin, u.Creator, &u.Comment).Scan(&lastInsertId)
 	if err != nil {
 		db.log.Error("Create(%q) unexpectedly failed. error : %v", u.Name, err)
