@@ -76,3 +76,18 @@ create table if not exists public.go_orgunit
 
 alter table public.go_orgunit   owner to go_cloud_k8s_user_group;
 comment on table go_orgunit is 'go_orgunit contains the list of organisational units of the GO_USER microservice';
+
+INSERT INTO public.go_group (name, creator, comment)
+VALUES ('global_admin', 1, 'global administrators');
+
+INSERT INTO public.go_group (name, creator, comment)
+VALUES ('object_admin', 1, 'administrators of object microservice');
+
+INSERT INTO public.go_group (name, creator, comment)
+VALUES ('object_editor', 1, 'editors of object microservice');
+
+INSERT INTO public.go_group (name, creator, comment)
+VALUES ('document_admin', 1, 'administrators of document microservice');
+
+INSERT INTO public.go_group (name, creator, comment)
+VALUES ('document_editor', 1, 'editors of document microservice');

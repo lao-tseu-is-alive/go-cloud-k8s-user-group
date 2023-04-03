@@ -42,8 +42,8 @@ WHERE id = $15;
 	usersDelete = "DELETE FROM go_user WHERE id = $1"
 
 	insertAdminUser = `
-INSERT INTO go_user (name, email, username, password_hash, is_admin, creator, comment) 
-VALUES ('Administrative Account','admin@example.com',$1,$2, true, 1, 'Initial setup of Admin account')  RETURNING id;`
+INSERT INTO go_user (name, email, username, password_hash, is_admin, creator, groups_id, comment) 
+VALUES ('Administrative Account','admin@example.com',$1,$2, true, 1, '{1}', 'Initial setup of Admin account')  RETURNING id;`
 
 	updateAdminUser = `
 UPDATE go_user
