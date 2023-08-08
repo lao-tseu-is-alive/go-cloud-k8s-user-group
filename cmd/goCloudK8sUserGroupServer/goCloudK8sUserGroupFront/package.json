@@ -13,7 +13,7 @@
     "@vue/eslint-config-airbnb": "^7.0.0",
     "axios": "^0.27.2",
     "crypto-js": "^4.1.1",
-    "primeflex": "^3.3.0",
+    "primeflex": "^3.3.1",
     "primeicons": "^5.0.0",
     "primevue": "^3.17.0",
     "vue": "^3.2.47"
