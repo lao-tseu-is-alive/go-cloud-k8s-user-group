@@ -9,7 +9,7 @@
     "preview": "vite preview"
   },
   "dependencies": {
-    "@rushstack/eslint-patch": "^1.2.0",
+    "@rushstack/eslint-patch": "^1.3.2",
     "@vue/eslint-config-airbnb": "^7.0.0",
     "axios": "^0.27.2",
     "crypto-js": "^4.1.1",
