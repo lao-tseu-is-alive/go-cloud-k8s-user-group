@@ -3,9 +3,9 @@ package users
 import (
 	"context"
 	"errors"
-	"github.com/georgysavva/scany/pgxscan"
-	"github.com/jackc/pgx/v4"
-	"github.com/jackc/pgx/v4/pgxpool"
+	"github.com/georgysavva/scany/v2/pgxscan"
+	"github.com/jackc/pgx/v5"
+	"github.com/jackc/pgx/v5/pgxpool"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/config"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/database"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
@@ -22,11 +22,11 @@ type PGX struct {
 }
 
 // NewPgxDB will instantiate a new storage of type postgres and ensure schema exist
-func NewPgxDB(db database.DB, log golog.MyLogger) (Storage, error) {
+func NewPgxDB(db database.DB, log golog.MyLogger) Storage {
 	var psql PGX
 	pgConn, err := db.GetPGConn()
 	if err != nil {
-		return nil, err
+		log.Fatal("error doing GetPGConn() : %v", err)
 	}
 	psql.Conn = pgConn
 	psql.dbi = db
@@ -35,27 +35,23 @@ func NewPgxDB(db database.DB, log golog.MyLogger) (Storage, error) {
 	errMetaTable := pgConn.QueryRow(context.Background(), countMetaUserServiceSQL).Scan(&numberOfServicesSchema)
 	if errMetaTable != nil {
 		log.Warn("problem counting the rows in metadata table : %v", errMetaTable)
-		return nil, errors.New("unable to countMetaUserServiceSQL")
+		log.Fatal("unable to countMetaUserServiceSQL")
 	}
 
-	adminUser := config.GetAdminUserFromFromEnv("admin")
-	adminPassword, err := config.GetAdminPasswordFromFromEnv()
-	if err != nil {
-		log.Error("GetAdminPasswordFromFromEnv returned error : %v'", err)
-		return nil, errors.New("unable to retrieve a valid admin password GetAdminPasswordFromFromEnv")
-	}
+	adminUser := config.GetAdminUserFromEnvOrPanic("admin")
+	adminPassword := config.GetAdminPasswordFromEnvOrPanic()
 	var lastInsertId int = 0
 	passwordHash := crypto.Sha256Hash(adminPassword)
 	goHash, err := crypto.HashAndSalt(passwordHash)
 	if err != nil {
 		log.Error("crypto.HashAndSalt unexpectedly failed. error : %v", err)
-		return nil, errors.New("unable to calculate hash for the admin password ")
+		panic("unable to calculate hash for the admin password ")
 	}
 	var numberOfUsers int
 	errUsersTable := pgConn.QueryRow(context.Background(), usersCount).Scan(&numberOfUsers)
 	if errUsersTable != nil {
 		log.Error("Unable to retrieve the number of users error: %v", err)
-		return nil, err
+		panic("unable to retrieve the number of users")
 	}
 
 	if numberOfUsers > 0 {
@@ -64,7 +60,7 @@ func NewPgxDB(db database.DB, log golog.MyLogger) (Storage, error) {
 		commandTag, err := pgConn.Exec(context.Background(), updateAdminUser, adminUser, goHash)
 		if err != nil {
 			log.Error("updateAdminUser adminUser:(%s) hash : %s unexpectedly failed. error : %v", adminUser, goHash, err)
-			return nil, errors.New("unable to update adminUser in table «go_user» ")
+			panic("unable to update adminUser in table «go_user» ")
 		}
 		log.Info("'update %d row with admin user %s  in «go_user»'", int(commandTag.RowsAffected()), adminUser)
 	} else {
@@ -72,12 +68,12 @@ func NewPgxDB(db database.DB, log golog.MyLogger) (Storage, error) {
 		err = pgConn.QueryRow(context.Background(), insertAdminUser, adminUser, goHash).Scan(&lastInsertId)
 		if err != nil {
 			log.Error("insertAdminUser adminUser:(%s) hash : %s unexpectedly failed. error : %v", adminUser, goHash, err)
-			return nil, errors.New("unable to insert adminUser in table «go_user» ")
+			panic("unable to insert adminUser in table «go_user» ")
 		}
 		log.Info("insertAdminUser adminUser:(%s) created with id : %d", adminUser, lastInsertId)
 	}
 
-	return &psql, err
+	return &psql
 }
 
 // Create will store the new user in the store
@@ -260,11 +256,11 @@ func (db *PGX) Delete(id int32) error {
 
 // FindUsername retrieves the user id for the given username or err if not found.
 func (db *PGX) FindUsername(username string) (int32, error) {
-	db.log.Debug("trace : entering FindUsername(%s)", username)
+	db.log.Debug("trace : entering FindUsername('%s')", username)
 	idUser, err := db.dbi.GetQueryInt(usernameFind, username)
 	if err != nil {
 		if err == pgx.ErrNoRows {
-			db.log.Warn("FindUsername(%s) did not find any rows with this username", username)
+			db.log.Warn("FindUsername('%s') did not find any rows with this username", username)
 			return 0, ErrUsernameNotFound
 		}
 		db.log.Error("FindUsername(%s) could not be retrieved from DB. failed db.Query err: %v", username, err)

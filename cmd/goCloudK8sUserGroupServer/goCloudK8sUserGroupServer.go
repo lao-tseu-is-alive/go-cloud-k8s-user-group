@@ -2,14 +2,15 @@ package main
 
 import (
 	"embed"
+	"errors"
 	"fmt"
 	"github.com/golang-migrate/migrate/v4"
-	_ "github.com/golang-migrate/migrate/v4/database/pgx"
+	_ "github.com/golang-migrate/migrate/v4/database/pgx/v5"
 	"github.com/golang-migrate/migrate/v4/source/iofs"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/config"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/database"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/goHttpEcho"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
-	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/goserver"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/metadata"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/tools"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/users"
@@ -25,6 +26,9 @@ const (
 	defaultDBSslMode           = "prefer"
 	defaultWebRootDir          = "goCloudK8sUserGroupFront/dist/"
 	defaultSqlDbMigrationsPath = "db/migrations"
+	defaultAdminUser           = "goadmin"
+	defaultAdminEmail          = "goadmin@yourdomain.org"
+	defaultAdminId             = 960901
 	charsetUTF8                = "charset=UTF-8"
 	MIMEAppJSON                = "application/json"
 	MIMEHtml                   = "text/html"
@@ -49,58 +53,39 @@ func main() {
 	// l := log.New(os.Stdout, fmt.Sprintf("%s ", version.APP), log.Ldate|log.Ltime|log.Lshortfile)
 	prefix := fmt.Sprintf("%s ", version.APP)
 	l, _ := golog.NewLogger("dev", golog.DebugLevel, prefix)
-	l.Info("Starting %s v:%s  rev:%s  build: %s'", version.APP, version.VERSION, version.REVISION, version.BuildStamp)
-	l.Info("Repository url: https://%s'", version.REPOSITORY)
-	secret, err := config.GetJwtSecretFromEnv()
+	l.Info("🚀🚀 Starting App:'%s', ver:%s, from: %s", version.APP, version.VERSION, version.REPOSITORY)
+
+	dbDsn := config.GetPgDbDsnUrlFromEnvOrPanic(defaultDBIp, defaultDBPort, tools.ToSnakeCase(version.APP), version.AppSnake, defaultDBSslMode)
+	db, err := database.GetInstance("pgx", dbDsn, runtime.NumCPU(), l)
 	if err != nil {
-		l.Fatal("💥💥 error doing config.GetJwtSecretFromEnv(). error: %v'\n", err)
-	}
-	tokenDuration, err := config.GetJwtDurationFromEnv(60)
-	if err != nil {
-		l.Fatal("💥💥 error doing config.GetJwtDurationFromEnv(60). error: %v'\n", err)
-	}
-	dbDsn, err := config.GetPgDbDsnUrlFromEnv(defaultDBIp, defaultDBPort,
-		tools.ToSnakeCase(version.APP), version.AppSnake, defaultDBSslMode)
-	if err != nil {
-		l.Fatal("💥💥 error doing config.GetPgDbDsnUrlFromEnv(). error: %v\n", err)
-	}
-	db, err = database.GetInstance("pgx", dbDsn, runtime.NumCPU(), l)
-	if err != nil {
-		l.Fatal("💥💥 error doing database.GetInstance(pgx, dbDsn:%v). error:%v\n", dbDsn, err)
+		l.Fatal("💥💥 error doing database.GetInstance(pgx ...) error: %v", err)
 	}
 	defer db.Close()
 
-	metadataService := metadata.Service{
-		Log: l,
-		Db:  db,
-	}
-
-	err = metadataService.CreateMetadataTableIfNeeded()
+	dbVersion, err := db.GetVersion()
 	if err != nil {
-		l.Fatal("💥💥 error doing metadataService.CreateMetadataTableIfNeeded  error: %v", err)
+		l.Fatal("💥💥 error doing dbConn.GetVersion() error: %v", err)
 	}
+	l.Info("connected to db version : %s", dbVersion)
 
-	found, ver, err := metadataService.GetServiceVersion(version.APP)
-	if err != nil {
-		l.Fatal("💥💥 error doing metadataService.CreateMetadataTableIfNeeded  error: %v\n", err)
-	}
+	// checking metadata information
+	metadataService := metadata.Service{Log: l, Db: db}
+	metadataService.CreateMetadataTableOrFail()
+	found, ver := metadataService.GetServiceVersionOrFail(version.APP)
 	if found {
 		l.Info("service %s was found in metadata with version: %s", version.APP, ver)
 	} else {
 		l.Info("service %s was not found in metadata", version.APP)
 	}
-	err = metadataService.SetServiceVersion(version.APP, version.VERSION)
-	if err != nil {
-		l.Fatal("💥💥 error doing metadataService.SetServiceVersion  error: %v\n", err)
-	}
-	// example of go-migrate db migration with embed files in go program
+	metadataService.SetServiceVersionOrFail(version.APP, version.VERSION)
+
+	// begin section go-migrate db migration with embed files in go program
 	// https://github.com/golang-migrate/migrate
-	// https://github.com/golang-migrate/migrate/blob/master/database/postgres/TUTORIAL.md
 	d, err := iofs.New(sqlMigrations, defaultSqlDbMigrationsPath)
 	if err != nil {
 		l.Fatal("💥💥 error doing iofs.New for db migrations  error: %v\n", err)
 	}
-	m, err := migrate.NewWithSourceInstance("iofs", d, strings.Replace(dbDsn, "postgres", "pgx", 1))
+	m, err := migrate.NewWithSourceInstance("iofs", d, strings.Replace(dbDsn, "postgres", "pgx5", 1))
 	if err != nil {
 		l.Fatal("💥💥 error doing migrate.NewWithSourceInstance(iofs, dbURL:%s)  error: %v\n", dbDsn, err)
 	}
@@ -108,29 +93,56 @@ func main() {
 	err = m.Up()
 	if err != nil {
 		//if err == m.
-		if err != migrate.ErrNoChange {
+		if !errors.Is(err, migrate.ErrNoChange) {
 			l.Fatal("💥💥 error doing migrate.Up error: %v\n", err)
 		}
 	}
+	// end section go-migrate db migration with embed files in go program
 
-	userStore, err := users.GetStorageInstance("pgx", db, l)
-	if err != nil {
-		l.Fatal("💥💥 error doing users.GetStorageInstance(postgres, dbDsn  : %v\n", err)
-	}
+	myVersionReader := goHttpEcho.NewSimpleVersionReader(version.APP, version.VERSION, version.REPOSITORY)
+	// Create a new JWT checker
+	myJwt := goHttpEcho.NewJwtChecker(
+		config.GetJwtSecretFromEnvOrPanic(),
+		config.GetJwtIssuerFromEnvOrPanic(),
+		version.APP,
+		config.GetJwtDurationFromEnvOrPanic(60),
+		l)
+	// Create a new Authenticator with a simple admin user
+	myAuthenticator := goHttpEcho.NewSimpleAdminAuthenticator(&goHttpEcho.UserInfo{
+		UserId:     config.GetAdminIdFromEnvOrPanic(defaultAdminId),
+		ExternalId: config.GetAdminExternalIdFromEnvOrPanic(9999999),
+		Name:       "NewSimpleAdminAuthenticator_Admin",
+		Email:      config.GetAdminEmailFromEnvOrPanic(defaultAdminEmail),
+		Login:      config.GetAdminUserFromEnvOrPanic(defaultAdminUser),
+		IsAdmin:    false,
+	},
+		config.GetAdminPasswordFromEnvOrPanic(),
+		myJwt)
+
+	server := goHttpEcho.CreateNewServerFromEnvOrFail(
+		defaultPort,
+		"0.0.0.0", // defaultServerIp,
+		&goHttpEcho.Config{
+			ListenAddress: "",
+			Authenticator: myAuthenticator,
+			JwtCheck:      myJwt,
+			VersionReader: myVersionReader,
+			Logger:        l,
+			WebRootDir:    defaultWebRootDir,
+			Content:       content,
+			RestrictedUrl: "/api/v1",
+		},
+	)
+
+	userStore := users.GetStorageInstanceOrPanic("pgx", db, l)
 
 	userService := users.Service{
-		Log:         l,
-		Store:       userStore,
-		JwtSecret:   []byte(secret),
-		JwtDuration: tokenDuration,
+		Logger: l,
+		DbConn: db,
+		Store:  userStore,
+		Server: server,
 	}
 
-	listenAddr, err := config.GetPortFromEnv(defaultPort)
-	if err != nil {
-		l.Fatal("💥💥 ERROR: 'calling GetPortFromEnv got error: %v'\n", err)
-	}
-	l.Info("Will start HTTP server listening on port %s'", listenAddr)
-	server := goserver.NewGoHttpServer(listenAddr, l, defaultWebRootDir, content, "/api")
 	e := server.GetEcho()
 	e.GET("/login", userService.GetLogin)
 	e.POST("/login", userService.LoginUser)
@@ -146,7 +158,7 @@ func main() {
 
 	err = server.StartServer()
 	if err != nil {
-		l.Fatal("💥💥 ERROR: 'calling echo.Start(%s) got error: %v'\n", listenAddr, err)
+		l.Fatal("💥💥 ERROR: 'calling echo.StartServer() got error: %v'\n", err)
 	}
 
 }

@@ -9,7 +9,6 @@ import (
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-user-group/pkg/users"
 	"github.com/stretchr/testify/assert"
 	"io"
-	"log"
 	"net/http"
 	"strings"
 	"sync"
@@ -69,12 +68,9 @@ type testStruct struct {
 
 // TestMainExec is instantiating the "real" main code using the env variable (in your .env files if you use the Makefile rule)
 func TestMainExec(t *testing.T) {
-	listenPort, err := config.GetPortFromEnv(defaultPort)
-	if err != nil {
-		t.Errorf("💥💥 ERROR: 'calling GetPortFromEnv got error: %v'\n", err)
-		return
-	}
-	listenAddr := fmt.Sprintf("http://localhost%s", listenPort)
+	listenPort := config.GetPortFromEnvOrPanic(defaultPort)
+	listenIP := config.GetListenIpFromEnvOrPanic("0.0.0.0")
+	listenAddr := fmt.Sprintf("%s://%s:%d", "http", listenIP, listenPort)
 	fmt.Printf("INFO: 'Will start HTTP server listening on port %s'\n", listenAddr)
 
 	newRequest := func(method, url string, body string) *http.Request {
@@ -84,17 +80,14 @@ func TestMainExec(t *testing.T) {
 			t.Fatalf("### ERROR http.NewRequest %s on [%s] error is :%v\n", method, url, err)
 		}
 		if method == http.MethodPost {
-			r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			// r.Header.Set("Content-Type", "application/x-www-form-urlencoded")
+			r.Header.Set("Content-Type", "application/json")
 		}
 		return r
 	}
 
-	adminUser := config.GetAdminUserFromFromEnv("admin")
-	adminPassword, err := config.GetAdminPasswordFromFromEnv()
-	if err != nil {
-		log.Fatalf("GetAdminPasswordFromFromEnv returned error : %v'", err)
-		return
-	}
+	adminUser := config.GetAdminUserFromEnvOrPanic("admin")
+	adminPassword := config.GetAdminPasswordFromEnvOrPanic()
 	passwordHash := crypto.Sha256Hash(adminPassword)
 	uLogin := users.UserLogin{
 		PasswordHash: passwordHash,
@@ -156,7 +149,7 @@ func TestMainExec(t *testing.T) {
 		defer wg.Done()
 		main()
 	}()
-	gohttpclient.WaitForHttpServer(listenAddr, 1*time.Second, 10)
+	gohttpclient.WaitForHttpServer(listenAddr, 2*time.Second, 10)
 
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {

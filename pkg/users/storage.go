@@ -1,7 +1,6 @@
 package users
 
 import (
-	"errors"
 	"fmt"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/database"
 	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/golog"
@@ -40,6 +39,8 @@ type Storage interface {
 	IsUserAdmin(id int32) bool
 	// IsUserActive returns true if the user with the specified id has the is_active attribute set to true
 	IsUserActive(id int32) bool
+	// ResetPassword updates the password hash for the user with the specified id
+	ResetPassword(id int32, passwordHash string, idCurrentUser int) error
 	// CreateGroup saves a new group in the storage.
 	CreateGroup(group Group) (*Group, error)
 	// UpdateGroup updates the group with given ID in the storage.
@@ -52,20 +53,20 @@ type Storage interface {
 	GetGroup(id int32) (*Group, error)
 }
 
-func GetStorageInstance(dbDriver string, db database.DB, l golog.MyLogger) (Storage, error) {
+func GetStorageInstanceOrPanic(dbDriver string, db database.DB, l golog.MyLogger) Storage {
 	var store Storage
 	var err error
 	switch dbDriver {
 	case "pgx":
-		store, err = NewPgxDB(db, l)
+		store = NewPgxDB(db, l)
 		if err != nil {
-			return nil, fmt.Errorf("error doing NewPgxDB(pgConn : %w", err)
+			l.Fatal("error doing NewPgxDB(pgConn : %w", err)
 		}
 
 	default:
-		return nil, errors.New("unsupported DB driver type")
+		panic("unsupported DB driver type")
 	}
-	return store, nil
+	return store
 }
 
 func GetErrorF(errMsg string, err error) error {

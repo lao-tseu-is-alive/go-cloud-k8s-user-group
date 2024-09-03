@@ -33,7 +33,7 @@ else
 fi
 echo "## USING APP_NAME: \"${APP_NAME}\", APP_VERSION: \"${APP_VERSION}\""
 K8s_NAMESPACE="test-$APP_NAME"
-IMAGE_FILTER="${CONTAINER_REGISTRY_ID}/${APP_NAME}"
+IMAGE_FILTER="${CONTAINER_REGISTRY_ID}/${APP_NAME_SNAKE}"
 echo "## Checking if image exist  ${IMAGE_FILTER} tag:v${APP_VERSION}"
 JSON_APP=$(${DOCKER_BIN} images --format '{{json .}}' | jq ".| select(.Repository | contains(\"${IMAGE_FILTER}\")) |select(.Tag | contains(\"v${APP_VERSION}\"))")
 APP_ID=$(echo "${JSON_APP}" | jq '.|.ID')

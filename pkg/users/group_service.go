@@ -2,23 +2,20 @@ package users
 
 import (
 	"fmt"
-	"github.com/cristalhq/jwt/v4"
 	"github.com/labstack/echo/v4"
+	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/goHttpEcho"
 	"net/http"
 )
 
 // GroupCreate will store a new Group in the store
 func (s Service) GroupCreate(ctx echo.Context) error {
-	s.Log.Debug("trace : entering GroupCreate()")
+	handlerName := "GroupCreate"
+	goHttpEcho.TraceRequest(handlerName, ctx.Request(), s.Logger)
 	// get the current user from JWT TOKEN
-	u := ctx.Get("jwtdata").(*jwt.Token)
-	claims := JwtCustomClaims{}
-	err := u.DecodeClaims(&claims)
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, err)
-	}
+	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
+	currentUserId := int32(claims.User.UserId)
+	s.Logger.Info("in %s : currentUserId: %d", handlerName, currentUserId)
 	// IF USER IS NOT ADMIN RETURN 401 Unauthorized
-	currentUserId := claims.Id
 	if !s.Store.IsUserAdmin(currentUserId) {
 		return echo.NewHTTPError(http.StatusUnauthorized, "current user has no admin privilege")
 	}
@@ -35,14 +32,14 @@ func (s Service) GroupCreate(ctx echo.Context) error {
 	if len(newGroup.Name) < 5 {
 		return ctx.JSON(http.StatusBadRequest, fmt.Sprint("GroupCreate name minLength is 5"))
 	}
-	s.Log.Info("# GroupCreate() newGroup : %#v\n", newGroup)
+	s.Logger.Info("# GroupCreate() newGroup : %#v\n", newGroup)
 	groupCreated, err := s.Store.CreateGroup(*newGroup)
 	if err != nil {
 		msg := fmt.Sprintf("GroupCreate had an error saving group:%#v, err:%#v", *newGroup, err)
-		s.Log.Info(msg)
+		s.Logger.Info(msg)
 		return ctx.JSON(http.StatusBadRequest, msg)
 	}
-	s.Log.Info("# GroupCreate() Group %#v\n", groupCreated)
+	s.Logger.Info("# GroupCreate() Group %#v\n", groupCreated)
 	return ctx.JSON(http.StatusCreated, groupCreated)
 
 }
@@ -51,15 +48,11 @@ func (s Service) GroupCreate(ctx echo.Context) error {
 // to test it with curl you can try :
 // curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $token" 'http://localhost:8888/api/users' |jq
 func (s Service) GroupGet(ctx echo.Context, id int32) error {
-	s.Log.Info("trace: entering GroupGet(%d)", id)
-	// get the current user from JWT TOKEN
-	u := ctx.Get("jwtdata").(*jwt.Token)
-	claims := JwtCustomClaims{}
-	err := u.DecodeClaims(&claims)
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, err)
-	}
-	currentUserId := claims.Id
+	handlerName := "GroupGet"
+	goHttpEcho.TraceRequest(handlerName, ctx.Request(), s.Logger)
+	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
+	currentUserId := int32(claims.User.UserId)
+	s.Logger.Info("in %s : currentUserId: %d", handlerName, currentUserId)
 	// IF USER IS NOT ADMIN RETURN 401 Unauthorized
 	if !s.Store.IsUserAdmin(currentUserId) {
 		return echo.NewHTTPError(http.StatusUnauthorized, "current user has no admin privilege")
@@ -73,14 +66,12 @@ func (s Service) GroupGet(ctx echo.Context, id int32) error {
 
 // GroupList will retrieve all Groups in the store and return then
 func (s Service) GroupList(ctx echo.Context, params GroupListParams) error {
-	s.Log.Info("trace: entering GroupList() params:%v", params)
+	handlerName := "GroupList"
+	goHttpEcho.TraceRequest(handlerName, ctx.Request(), s.Logger)
 	// get the current user from JWT TOKEN
-	u := ctx.Get("jwtdata").(*jwt.Token)
-	claims := JwtCustomClaims{}
-	err := u.DecodeClaims(&claims)
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, err)
-	}
+	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
+	currentUserId := int32(claims.User.UserId)
+	s.Logger.Info("in %s : currentUserId: %d", handlerName, currentUserId)
 	list, err := s.Store.ListGroup(0, 100)
 	if err != nil {
 		return echo.NewHTTPError(http.StatusInternalServerError, fmt.Sprintf("problem calling store.ListGroup :%v", err))
@@ -91,23 +82,18 @@ func (s Service) GroupList(ctx echo.Context, params GroupListParams) error {
 // GroupDelete will remove the given id entry from the store, and if not present will return 400 Bad Request
 // curl -v -XDELETE -H "Content-Type: application/json" -H "Authorization: Bearer $token" 'http://localhost:8888/api/groups/3' ->  204 No Content if present and delete it
 func (s Service) GroupDelete(ctx echo.Context, id int32) error {
-	s.Log.Info("trace: entering GroupDelete(%d)", id)
-	// get the current user from JWT TOKEN
-	u := ctx.Get("jwtdata").(*jwt.Token)
-	claims := JwtCustomClaims{}
-	err := u.DecodeClaims(&claims)
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, err)
-	}
-	// IF USER IS NOT ADMIN RETURN 401 Unauthorized
-	currentUserId := claims.Id
+	handlerName := "GroupDelete"
+	goHttpEcho.TraceRequest(handlerName, ctx.Request(), s.Logger)
+	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
+	currentUserId := int32(claims.User.UserId)
+	s.Logger.Info("in %s : currentUserId: %d", handlerName, currentUserId)
 	if !s.Store.IsUserAdmin(currentUserId) {
 		return echo.NewHTTPError(http.StatusUnauthorized, "current user has no admin privilege")
 	}
-	err = s.Store.DeleteGroup(id)
+	err := s.Store.DeleteGroup(id)
 	if err != nil {
 		msg := fmt.Sprintf("GroupDelete(%d) got an error: %#v ", id, err)
-		s.Log.Info(msg)
+		s.Logger.Info(msg)
 		return echo.NewHTTPError(http.StatusInternalServerError, msg)
 	}
 	return ctx.NoContent(http.StatusNoContent)
@@ -116,16 +102,11 @@ func (s Service) GroupDelete(ctx echo.Context, id int32) error {
 
 // GroupUpdate will store the modified information in the store for the given id
 func (s Service) GroupUpdate(ctx echo.Context, id int32) error {
-	s.Log.Info("trace: entering GroupUpdate(%d)", id)
-	// get the current user from JWT TOKEN
-	u := ctx.Get("jwtdata").(*jwt.Token)
-	claims := JwtCustomClaims{}
-	err := u.DecodeClaims(&claims)
-	if err != nil {
-		return ctx.JSON(http.StatusInternalServerError, err)
-	}
-	// IF USER IS NOT ADMIN RETURN 401 Unauthorized
-	currentUserId := claims.Id
+	handlerName := "GroupUpdate"
+	goHttpEcho.TraceRequest(handlerName, ctx.Request(), s.Logger)
+	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
+	currentUserId := int32(claims.User.UserId)
+	s.Logger.Info("in %s : currentUserId: %d", handlerName, currentUserId)
 	if !s.Store.IsUserAdmin(currentUserId) {
 		return echo.NewHTTPError(http.StatusUnauthorized, "current user has no admin privilege")
 	}
