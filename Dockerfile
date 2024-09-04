@@ -19,7 +19,9 @@ COPY go.mod go.sum ./
 RUN go mod download
 
 # Copy the source from the current directory to the Working Directory inside the container
-COPY . ./
+COPY cmd/goCloudK8sUserGroupServer ./cmd/goCloudK8sUserGroupServer
+COPY cmd/goCloudK8sUserGroupServer/goCloudK8sUserGroupFront/dist ./cmd/goCloudK8sUserGroupServer/goCloudK8sUserGroupFront/dist
+COPY pkg ./pkg
 
 # Build the Go app
 RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o goCloudK8sUserGroupServer ./cmd/goCloudK8sUserGroupServer
@@ -63,7 +65,7 @@ EXPOSE 8080
 
 # how to check if container is ok https://docs.docker.com/engine/reference/builder/#healthcheck
 HEALTHCHECK --start-period=5s --interval=30s --timeout=3s \
-    CMD curl --fail http://localhost:9090/health || exit 1
+    CMD ["curl", "--fail", "http://localhost:9090/health"]
 
 
 # Command to run the executable

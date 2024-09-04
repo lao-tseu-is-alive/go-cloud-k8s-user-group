@@ -196,8 +196,7 @@ onMounted(() => {
   const method = 'mounted()';
   log.t(`${method}`);
   if (DEV) {
-    username.value = 'go-admin';
-    password.value = 'go123';
+    username.value = 'goadmin';
   }
   clearSessionStorage();
 });
