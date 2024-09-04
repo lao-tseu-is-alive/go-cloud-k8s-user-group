@@ -28,3 +28,4 @@ MakefileTest
 .vscode
 /scripts/runit.sh
 /db_backups/go_cloud_k8s_user_group_goeland_data_20230328.backup
+/.env_for_github.txt
