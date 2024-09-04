@@ -1,5 +1,9 @@
 # Start from the latest golang base image
-FROM golang:1-alpine3.17 as builder
+FROM golang:1.23-alpine3.20 as builder
+
+ENV PATH /usr/local/go/bin:$PATH
+ENV GOLANG_VERSION 1.23
+
 
 # Add Maintainer Info
 LABEL maintainer="cgil"
@@ -28,11 +32,14 @@ RUN CGO_ENABLED=0 GOOS=linux go build -a -installsuffix cgo -o goCloudK8sUserGro
 # https://blog.baeke.info/2021/03/28/distroless-or-scratch-for-go-apps/
 # https://github.com/vfarcic/base-container-images-demo
 FROM scratch
-# to comply with security best practices
-# Running containers with 'root' user can lead to a container escape situation (the default with Docker...).
-# It is a best practice to run containers as non-root users
-# https://docs.docker.com/develop/develop-images/dockerfile_best-practices/
-# https://docs.docker.com/engine/reference/builder/#user
+
+# Add Maintainer Info
+LABEL maintainer="cgil"
+LABEL org.opencontainers.image.title="goCloudK8sUserGroup"
+LABEL org.opencontainers.image.description="This is a goCloudK8sUserGroup container image, Allows to manage users and groups"
+LABEL org.opencontainers.image.authors="cgil"
+LABEL org.opencontainers.image.licenses="GPL-3.0"
+
 USER 1221:1221
 WORKDIR /goapp
 
@@ -53,6 +60,11 @@ ENV JWT_SECRET="${JWT_SECRET}"
 ENV JWT_DURATION_MINUTES="${JWT_DURATION_MINUTES}"
 # Expose port  to the outside world, goCloudK8sUserGroup will use the env PORT as listening port or 8080 as default
 EXPOSE 8080
+
+# how to check if container is ok https://docs.docker.com/engine/reference/builder/#healthcheck
+HEALTHCHECK --start-period=5s --interval=30s --timeout=3s \
+    CMD curl --fail http://localhost:9090/health || exit 1
+
 
 # Command to run the executable
 CMD ["./goCloudK8sUserGroupServer"]
