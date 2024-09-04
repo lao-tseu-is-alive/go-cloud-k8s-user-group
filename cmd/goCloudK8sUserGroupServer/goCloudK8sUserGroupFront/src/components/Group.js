@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { functionExist, getErrorMessage } from '../tools/utils';
-import { BACKEND_URL, getLog } from '../config';
+import { apiRestrictedUrl, BACKEND_URL, getLog } from '../config';
 import { getLocalJwtTokenAuth } from './Login';
 
 const log = getLog('Group', 4, 1);
@@ -11,7 +11,7 @@ const group = {
     const method = 'getList';
     log.t(`## IN ${method}`);
     axios.defaults.headers.common.Authorization = getLocalJwtTokenAuth();
-    axios.get(`${BACKEND_URL}/api/groups`)
+    axios.get(`${BACKEND_URL}/${apiRestrictedUrl}/groups`)
       .then((resp) => {
         log.t(`## IN ${method} axios get success resp.data :`, resp.data);
         if (functionExist(callbackLoaded)) {
@@ -28,7 +28,7 @@ const group = {
     const method = 'getGroup';
     log.t(`## IN ${method}`);
     axios.defaults.headers.common.Authorization = getLocalJwtTokenAuth();
-    axios.get(`${BACKEND_URL}/api/groups/${idGroup}`)
+    axios.get(`${BACKEND_URL}/${apiRestrictedUrl}/groups/${idGroup}`)
       .then((resp) => {
         log.t(`## IN ${method} axios get success resp.data :`, resp.data);
         if (functionExist(callbackLoaded)) {
@@ -45,7 +45,7 @@ const group = {
     const method = 'newGroup';
     log.t(`## IN ${method}`);
     axios.defaults.headers.common.Authorization = getLocalJwtTokenAuth();
-    axios.post(`${BACKEND_URL}/api/groups`, data)
+    axios.post(`${BACKEND_URL}/${apiRestrictedUrl}/groups`, data)
       .then((resp) => {
         log.t(`## IN ${method} axios get success resp.data :`, resp.data);
         if (functionExist(callbackLoaded)) {
@@ -63,7 +63,7 @@ const group = {
     log.t(`## IN ${method}`);
     const { id } = data;
     axios.defaults.headers.common.Authorization = getLocalJwtTokenAuth();
-    axios.put(`${BACKEND_URL}/api/groups/${id}`, data)
+    axios.put(`${BACKEND_URL}/${apiRestrictedUrl}/groups/${id}`, data)
       .then((resp) => {
         log.t(`## IN ${method} axios put success resp.data :`, resp.data);
         if (functionExist(callbackLoaded)) {
@@ -80,7 +80,7 @@ const group = {
     const method = 'deleteGroup';
     log.t(`## IN ${method} id:${idGroupToDelete}`);
     axios.defaults.headers.common.Authorization = getLocalJwtTokenAuth();
-    axios.delete(`${BACKEND_URL}/api/groups/${idGroupToDelete}`)
+    axios.delete(`${BACKEND_URL}/${apiRestrictedUrl}/groups/${idGroupToDelete}`)
       .then((resp) => {
         log.t(`## IN ${method} axios delete success resp.data :`, resp.data);
         if (functionExist(callbackLoaded)) {

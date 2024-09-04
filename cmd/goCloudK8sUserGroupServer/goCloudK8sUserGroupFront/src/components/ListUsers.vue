@@ -176,11 +176,11 @@ import Row from 'primevue/row';
 import Toolbar from 'primevue/toolbar';
 import Textarea from 'primevue/textarea';
 import ToggleButton from 'primevue/togglebutton';
-import { FilterMatchMode } from 'primevue/api';
+import { FilterMatchMode } from '@primevue/core/api';
 import user from './User';
 import { getPasswordHash, getUserId } from './Login';
 import { getLog } from '../config';
-import { isNullOrUndefined } from '../tools/utils';
+import { isNullOrUndefined } from '../tools/utils.js';
 import group from './Group';
 
 const moduleName = 'ListUsers';

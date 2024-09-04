@@ -7,8 +7,8 @@
     </template>
     <template #content>
       <div class="field ">
-        <span class="p-input-icon-left w-full">
-          <i class="pi pi-user" />
+        <IconField>
+          <InputIcon class="pi pi-user" />
           <InputText
             id="go-username"
             ref="userInput"
@@ -21,11 +21,11 @@
             :disabled="disabled"
             @keyup.enter="onEnterKey"
           />
-        </span>
+        </IconField>
       </div>
       <div class="field w-full">
-        <span class="p-input-icon-left w-full">
-          <i class="pi pi-power-off" />
+        <IconField>
+          <InputIcon class="pi pi-user" />
           <Password
             id="go-password"
             ref="pwdInput"
@@ -39,7 +39,7 @@
             :disabled="disabled"
             @keyup.enter="onEnterKey"
           />
-        </span>
+        </IconField>
       </div>
       <div v-if="feedbackVisible">
         <Message :severity="feedbackType" class="w-full">
@@ -64,6 +64,8 @@
 import { onMounted, ref } from 'vue';
 import Button from 'primevue/button';
 import Card from 'primevue/card';
+import IconField from 'primevue/iconfield';
+import InputIcon from 'primevue/inputicon';
 import InputText from 'primevue/inputtext';
 import Password from 'primevue/password';
 import Message from 'primevue/inlinemessage';
@@ -197,6 +199,7 @@ onMounted(() => {
   log.t(`${method}`);
   if (DEV) {
     username.value = 'goadmin';
+    password.value = 'goOut_2028';
   }
   clearSessionStorage();
 });

@@ -1,8 +1,8 @@
 import sha256 from 'crypto-js/sha256';
 import axios from 'axios';
-import { getLog, APP, BACKEND_URL } from '../config';
+import { getLog, APP, BACKEND_URL, apiRestrictedUrl } from '../config';
 
-const log = getLog('Login', 2, 1);
+const log = getLog('Login', 4, 1);
 
 export const getPasswordHash = (password) => sha256(password);
 
@@ -33,12 +33,12 @@ export const getToken = async (baseServerUrl, username, passwordHash) => {
       if (typeof Storage !== 'undefined') {
         // Code for localStorage/sessionStorage.
         sessionStorage.setItem(`${APP}_goapi_jwt_session_token`, response.data.token);
-        sessionStorage.setItem(`${APP}_goapi_idgouser`, jwtValues.id);
-        sessionStorage.setItem(`${APP}_goapi_name`, jwtValues.name);
-        sessionStorage.setItem(`${APP}_goapi_username`, username);
-        sessionStorage.setItem(`${APP}_goapi_email`, jwtValues.email);
-        sessionStorage.setItem(`${APP}_goapi_isadmin`, jwtValues.is_admin);
-        sessionStorage.setItem(`${APP}_goapi_groups`, jwtValues.groups);
+        sessionStorage.setItem(`${APP}_goapi_idgouser`, jwtValues.User.user_id);
+        sessionStorage.setItem(`${APP}_goapi_user_external_id`, jwtValues.User.external_id);
+        sessionStorage.setItem(`${APP}_goapi_name`, jwtValues.User.name);
+        sessionStorage.setItem(`${APP}_goapi_username`, jwtValues.User.login);
+        sessionStorage.setItem(`${APP}_goapi_email`, jwtValues.User.email);
+        sessionStorage.setItem(`${APP}_goapi_isadmin`, jwtValues.User.is_admin);
         sessionStorage.setItem(`${APP}_goapi_date_expiration`, jwtValues.exp);
       }
       return response.data;
@@ -56,7 +56,7 @@ export const getTokenStatus = async (baseServerUrl = BACKEND_URL) => {
   log.t('# IN getTokenStatus() ');
   axios.defaults.headers.common.Authorization = `Bearer ${sessionStorage.getItem(`${APP}_goapi_jwt_session_token`)}`;
   try {
-    const res = await axios.get(`${baseServerUrl}/api/status`);
+    const res = await axios.get(`${baseServerUrl}/${apiRestrictedUrl}/status`);
     log.l('getTokenStatus() axios.get Success ! response :', res);
     const dExpires = new Date(0);
     dExpires.setUTCSeconds(res.data.exp);
@@ -67,7 +67,7 @@ export const getTokenStatus = async (baseServerUrl = BACKEND_URL) => {
       msg, err: null, status: res.status, data,
     };
   } catch (error) {
-    const msg = `Error: in getTokenStatus() ## axios.get(${baseServerUrl}/api/status) ERROR ## error :${error}`;
+    const msg = `Error: in getTokenStatus() ## axios.get(${baseServerUrl}/${apiRestrictedUrl}/status) ERROR ## error :${error}`;
     log.w(msg);
     if (error.response) {
       const errResponse = error.response;
@@ -85,6 +85,7 @@ export const clearSessionStorage = () => {
   // Code for localStorage/sessionStorage.
   sessionStorage.removeItem(`${APP}_goapi_jwt_session_token`);
   sessionStorage.removeItem(`${APP}_goapi_idgouser`);
+  sessionStorage.removeItem(`${APP}_goapi_user_external_id`);
   sessionStorage.removeItem(`${APP}_goapi_name`);
   sessionStorage.removeItem(`${APP}_goapi_username`);
   sessionStorage.removeItem(`${APP}_goapi_email`);
@@ -96,7 +97,7 @@ export const clearSessionStorage = () => {
 export const logoutAndResetToken = (baseServerUrl) => {
   log.t('# IN logoutAndResetToken()');
   axios.defaults.headers.common.Authorization = `Bearer ${sessionStorage.getItem(`${APP}_goapi_jwt_session_token`)}`;
-  axios.get(`${baseServerUrl}/api/logout`)
+  axios.get(`${baseServerUrl}/${apiRestrictedUrl}/logout`)
     .then((response) => {
       log.l('logoutAndResetToken() axios.get Success ! response :', response);
       clearSessionStorage();

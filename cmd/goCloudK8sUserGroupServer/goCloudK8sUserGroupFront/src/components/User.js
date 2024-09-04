@@ -1,6 +1,6 @@
 import axios from 'axios';
 import { functionExist, getErrorMessage } from '../tools/utils';
-import { BACKEND_URL, getLog } from '../config';
+import {apiRestrictedUrl, BACKEND_URL, getLog} from '../config';
 import { getLocalJwtTokenAuth } from './Login';
 
 const log = getLog('User', 4, 1);
@@ -11,7 +11,7 @@ const user = {
     const method = 'getList';
     log.t(`## IN ${method}`);
     axios.defaults.headers.common.Authorization = getLocalJwtTokenAuth();
-    axios.get(`${BACKEND_URL}/api/users`)
+    axios.get(`${BACKEND_URL}/${apiRestrictedUrl}/users`)
       .then((resp) => {
         log.t(`## IN ${method} axios get success resp.data :`, resp.data);
         if (functionExist(callbackLoaded)) {
@@ -28,7 +28,7 @@ const user = {
     const method = 'getUser';
     log.t(`## IN ${method}`);
     axios.defaults.headers.common.Authorization = getLocalJwtTokenAuth();
-    axios.get(`${BACKEND_URL}/api/users/${idUser}`)
+    axios.get(`${BACKEND_URL}/${apiRestrictedUrl}/users/${idUser}`)
       .then((resp) => {
         log.t(`## IN ${method} axios get success resp.data :`, resp.data);
         if (functionExist(callbackLoaded)) {
@@ -45,7 +45,7 @@ const user = {
     const method = 'newUser';
     log.t(`## IN ${method}`);
     axios.defaults.headers.common.Authorization = getLocalJwtTokenAuth();
-    axios.post(`${BACKEND_URL}/api/users`, data)
+    axios.post(`${BACKEND_URL}/${apiRestrictedUrl}/users`, data)
       .then((resp) => {
         log.t(`## IN ${method} axios get success resp.data :`, resp.data);
         if (functionExist(callbackLoaded)) {
@@ -63,7 +63,7 @@ const user = {
     log.t(`## IN ${method}`);
     const { id } = data;
     axios.defaults.headers.common.Authorization = getLocalJwtTokenAuth();
-    axios.put(`${BACKEND_URL}/api/users/${id}`, data)
+    axios.put(`${BACKEND_URL}/${apiRestrictedUrl}/users/${id}`, data)
       .then((resp) => {
         log.t(`## IN ${method} axios put success resp.data :`, resp.data);
         if (functionExist(callbackLoaded)) {
@@ -80,7 +80,7 @@ const user = {
     const method = 'deleteUser';
     log.t(`## IN ${method} id:${idUserToDelete}`);
     axios.defaults.headers.common.Authorization = getLocalJwtTokenAuth();
-    axios.delete(`${BACKEND_URL}/api/users/${idUserToDelete}`)
+    axios.delete(`${BACKEND_URL}/${apiRestrictedUrl}/users/${idUserToDelete}`)
       .then((resp) => {
         log.t(`## IN ${method} axios delete success resp.data :`, resp.data);
         if (functionExist(callbackLoaded)) {

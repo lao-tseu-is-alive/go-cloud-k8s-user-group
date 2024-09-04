@@ -94,7 +94,7 @@ import Dialog from 'primevue/dialog';
 import InputText from 'primevue/inputtext';
 import InputSwitch from 'primevue/inputswitch';
 import Textarea from 'primevue/textarea';
-import { FilterMatchMode } from 'primevue/api';
+import { FilterMatchMode } from '@primevue/core/api';
 import group from './Group';
 import { getLog } from '../config';
 import { isNullOrUndefined } from '../tools/utils';

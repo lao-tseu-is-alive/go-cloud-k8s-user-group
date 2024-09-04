@@ -1,14 +1,24 @@
+
+<style>
+html, body {
+  padding: 0;
+  margin: 0;
+  min-width: 240px;
+  font-family: Arial, sans-serif;
+}
+</style>
+
 <template>
   <header>
-    <Toolbar class="w-full m-0 p-0 bg-primary-500 border-0">
+    <Toolbar >
       <template #start>
         <span class="pl-2 text-white">{{ `${APP_TITLE} v.${VERSION}` }}</span>
       </template>
       <template #end>
         <template v-if="isUserAuthenticated">
-          <Button icon="pi pi-sign-out" class="p-button-rounded p-button-sm" title="Logout" @click="logout" />
+          <Button icon="pi pi-sign-out"  title="Logout" @click="logout" />
         </template>
-        <Button icon="pi pi-info-circle" class="p-button-rounded p-button-sm" title="A propos..." @click="aboutInfo" />
+        <Button icon="pi pi-info-circle"  title="A propos..." @click="aboutInfo" />
       </template>
     </Toolbar>
   </header>
@@ -29,7 +39,7 @@
                 </tab-panel>
               </tab-view>
             </template>
-            <h4>Connexion de {{ getUserLogin() }} [{{ getUserEmail() }}]</h4>
+            <h4>Connexion réussie de {{ getUserLogin() }} [{{ getUserEmail() }}]</h4>
           </template>
           <template v-else>
             <LoginUser
@@ -189,11 +199,3 @@ onMounted(() => {
 });
 
 </script>
-
-<style>
-html, body {
-  padding: 0;
-  margin: 0;
-  min-width: 240px;
-}
-</style>
