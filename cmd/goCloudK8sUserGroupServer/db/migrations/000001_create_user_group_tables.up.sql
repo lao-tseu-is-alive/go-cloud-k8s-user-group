@@ -74,7 +74,6 @@ create table if not exists public.go_orgunit
     full_name_de_norm      text
 );
 
-alter table public.go_orgunit   owner to go_cloud_k8s_user_group;
 comment on table go_orgunit is 'go_orgunit contains the list of organisational units of the GO_USER microservice';
 
 INSERT INTO public.go_group (name, creator, comment)
