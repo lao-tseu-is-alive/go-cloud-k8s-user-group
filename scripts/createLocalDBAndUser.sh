@@ -27,7 +27,7 @@ DB_NAME=$(echo "$APP_NAME" | sed --expression 's/\([A-Z]\)/_\L\1/g' --expression
 # generate a random password of 32 chars with chars selected in alphanumeric and some special chars
 #DB_PASSWORD=`tr -dc '_+=()A-Z-a-z-0-9' < /dev/urandom | fold -w32 | head -n1`
 #in this case i prefer to generate it with openssl, no user will enter this password manually
-if DB_PASSWORD=$(openssl rand -base64 32); then
+if DB_PASSWORD=$(openssl rand -base64 36 | tr -d '+=/'); then
   echo "## Will try to create postgres user "
   echo "## username       : ${DB_NAME}"
   echo "## password       : ${DB_PASSWORD}"
@@ -36,8 +36,9 @@ if DB_PASSWORD=$(openssl rand -base64 32); then
   su -c "${CREATE_USER}" postgres
   echo "## Will try to create database ${DB_NAME} with owner=${DB_NAME}"
   su -c "createdb -O ${DB_NAME} ${DB_NAME}" postgres
-  # uncomment next line to add postgis extension to the db
-  #su -c "psql -c 'CREATE EXTENSION postgis;' ${DB_NAME}" postgres
+  # next line allows to add the needed postgis extension to the db as a superuser
+  su -c "psql -c 'CREATE EXTENSION postgis;' ${DB_NAME}" postgres
+  su -c "psql -c 'CREATE EXTENSION unaccent;' ${DB_NAME}" postgres
   cd - || exit
   # https://www.freedesktop.org/software/systemd/man/systemd.service.html
   echo "## Will prepare a systemd unit conf file in current directory: ${APP_NAME}.conf"
