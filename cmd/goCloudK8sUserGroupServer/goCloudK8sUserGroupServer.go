@@ -49,6 +49,14 @@ var content embed.FS
 //go:embed db/migrations/*.sql
 var sqlMigrations embed.FS
 
+func checkHealthy(info string) bool {
+	// you decide what makes you ready, may be it is the connection to the database
+	//if !stillConnectedToDB {
+	//	return false
+	//}
+	return true
+}
+
 func main() {
 	// l := log.New(os.Stdout, fmt.Sprintf("%s ", version.APP), log.Ldate|log.Ltime|log.Lshortfile)
 	prefix := fmt.Sprintf("%s ", version.APP)
@@ -145,6 +153,16 @@ func main() {
 	}
 
 	e := server.GetEcho()
+	e.GET("/readiness", server.GetReadinessHandler(func(info string) bool {
+		ver, err := db.GetVersion()
+		if err != nil {
+			l.Error("Error getting db version : %v", err)
+			return false
+		}
+		l.Info("Connected to DB version : %s", ver)
+		return true
+	}, "Connection to DB"))
+	e.GET("/health", server.GetHealthHandler(checkHealthy, "Connection to DB"))
 	e.GET("/login", userService.GetLogin)
 	e.POST("/login", userService.LoginUser)
 	e.GET("/resetpassword", userService.GetResetPasswordEmail)

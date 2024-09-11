@@ -3,7 +3,7 @@ package version
 var (
 	APP        = "goCloudK8sUserGroup"
 	AppSnake   = "go-cloud-k8s-user-group"
-	VERSION    = "0.3.2"
+	VERSION    = "0.3.3"
 	REPOSITORY = "https://github.com/lao-tseu-is-alive/go-cloud-k8s-user-group"
 	REVISION   = "unknown"
 	Build      = "unknown"

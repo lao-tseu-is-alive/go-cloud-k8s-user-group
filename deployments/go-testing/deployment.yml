@@ -1,8 +1,8 @@
 ---
 ### TEMPLATE FOR A SERVICE AND DEPLOYMENT ON KUBERNETES just substitute the next keywords with your own values
-### APP_NAME     : the name of your application or container image
-### APP_VERSION  : the version of the app image to deploy
-### GO_CONTAINER_REGISTRY_PREFIX  : the prefix to your images in your container registry
+### go-cloud-k8s-user-group     : the name of your application or container image
+### v0.3.2  : the version of the app image to deploy
+### ghcr.io/lao-tseu-is-alive  : the prefix to your images in your container registry
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -26,7 +26,7 @@ metadata:
   name: compute-resources
   namespace: go-testing
   labels:
-    app: APP_NAME
+    app: go-cloud-k8s-user-group
 spec:
 ### ADAPT the values above to your need remember that you m
   hard:
@@ -67,7 +67,7 @@ metadata:
   namespace: go-testing
   name: pod-reader-role
   labels:
-    app: APP_NAME
+    app: go-cloud-k8s-user-group
 rules:
   - apiGroups: [""]  # "" indicates the core API group
     resources: ["pods", "namespaces"]
@@ -82,7 +82,7 @@ kind: ClusterRoleBinding
 metadata:
   name: pod-reader-role-binding
   labels:
-    app: APP_NAME
+    app: go-cloud-k8s-user-group
 subjects:
   - kind: Group
     name: system:serviceaccounts
@@ -97,7 +97,7 @@ kind: ClusterRole
 metadata:
   name: service-reader-role
   labels:
-    app: APP_NAME
+    app: go-cloud-k8s-user-group
 rules:
   - apiGroups: [""]
     resources: ["services"]
@@ -108,7 +108,7 @@ kind: ClusterRoleBinding
 metadata:
   name: service-reader-role-binding
   labels:
-    app: APP_NAME
+    app: go-cloud-k8s-user-group
 subjects:
   - kind: Group
     name: system:serviceaccounts
@@ -121,10 +121,10 @@ roleRef:
 apiVersion: v1
 kind: Service                    # Type of kubernetes resource
 metadata:
-  name: APP_NAME-service   # Name of the resource
+  name: go-cloud-k8s-user-group-service   # Name of the resource
   namespace: go-testing
   labels:     # The labels that will be applied
-    app: APP_NAME
+    app: go-cloud-k8s-user-group
   annotations:
     externalTrafficPolicy: "local"
 spec:
@@ -141,17 +141,17 @@ spec:
   ports:                         # Take incoming HTTP requests on this port (exposed) and forward them to the targetPort of container
     - name: http
       port: 8000
-      targetPort: 8000            # Should match the PORT env variable in deployment and containerPort that the Go application listens on
+      targetPort: my-http-port            # Should match the PORT env variable in deployment and containerPort that the Go application listens on
   selector:
-    app: APP_NAME         # Map any pod with this label `app=APP_NAME` to this service
+    app: go-cloud-k8s-user-group         # Map any pod with this label `app=go-cloud-k8s-user-group` to this service
 ---
 apiVersion: apps/v1
 kind: Deployment                 # Type of Kubernetes resource
 metadata:
-  name: APP_NAME           # Name of the Kubernetes resource
+  name: go-cloud-k8s-user-group           # Name of the Kubernetes resource
   namespace: go-testing
   labels:
-    app: APP_NAME
+    app: go-cloud-k8s-user-group
 spec:
   replicas: 2                    # Number of pods to run at any given time
   revisionHistoryLimit: 5        # The number of old ReplicaSets to retain to allow rollback
@@ -160,14 +160,14 @@ spec:
     type: RollingUpdate
     rollingUpdate:
       maxUnavailable: 1
-      maxSurge: 2               # maximum number of pods that can be scheduled above the desired number of pods.
+      maxSurge: 1               # maximum number of pods that can be scheduled above the desired number of pods.
   selector:
     matchLabels:
-      app: APP_NAME              # This deployment applies to any Pods matching the specified label
+      app: go-cloud-k8s-user-group              # This deployment applies to any Pods matching the specified label
   template:                      # This deployment will create a set of pods using the configurations in this template
     metadata:
       labels:                    # The labels that will be applied to all the pods in this deployment
-        app: APP_NAME
+        app: go-cloud-k8s-user-group
     spec:                        # Spec for the Pod base config, securityContext can be overridden in container
       # kubectl label nodes gok8sw01.lausanne.ch kubernetes.io/role=worker
       # comment the two next lines if you do not have worker nodes (rancher-desktop)
@@ -184,8 +184,8 @@ spec:
           - 100
       automountServiceAccountToken: false
       containers:
-      - name: APP_NAME
-        image: GO_CONTAINER_REGISTRY_PREFIX/APP_NAME:APP_VERSION
+      - name: go-cloud-k8s-user-group
+        image: ghcr.io/lao-tseu-is-alive/go-cloud-k8s-user-group:v0.3.2
         imagePullPolicy: Always
         securityContext:
           seccompProfile:
@@ -199,7 +199,8 @@ spec:
               - 'ALL'
           readOnlyRootFilesystem: true
         ports:
-          - containerPort: 8000  # Should match the PORT env variable above  that the Go application listens on
+          - containerPort: 8888   # The port that the Go application listens on
+            name: my-http-port
         resources:
           limits:            # resource limit imposed to the pod, the container cannot utilize more res than specified
             cpu: 1000m       # 1000 millicpu or millicores 1 or 100% of a CPU core of a running node
@@ -212,7 +213,7 @@ spec:
         livenessProbe:           # To check the health of the Pod
           httpGet:
             path: /health
-            port: 8000
+            port: my-http-port
             scheme: HTTP
           initialDelaySeconds: 5
           periodSeconds: 15
@@ -220,93 +221,96 @@ spec:
         readinessProbe:          # To check if the Pod is ready to serve traffic or not
           httpGet:
             path: /readiness
-            port: 8000
+            port: my-http-port
             scheme: HTTP
           initialDelaySeconds: 5
           timeoutSeconds: 2
         env:
           - name: PORT
-            value: "9090"
+            valueFrom:
+                configMapKeyRef:
+                    key: PORT
+                    name: app-config-go-cloud-k8s-user-group
           - name: DB_DRIVER
             valueFrom:
               configMapKeyRef:
                 key: DB_DRIVER
-                name: app-config-APP_NAME
+                name: app-config-go-cloud-k8s-user-group
           - name: DB_HOST
             valueFrom:
               configMapKeyRef:
                 key: DB_HOST
-                name: app-config-APP_NAME
+                name: app-config-go-cloud-k8s-user-group
           - name: DB_PORT
             valueFrom:
               configMapKeyRef:
                 key: DB_PORT
-                name: app-config-APP_NAME
+                name: app-config-go-cloud-k8s-user-group
           - name: DB_NAME
             valueFrom:
               configMapKeyRef:
                 key: DB_NAME
-                name: app-config-APP_NAME
+                name: app-config-go-cloud-k8s-user-group
           - name: DB_USER
             valueFrom:
               configMapKeyRef:
                 key: DB_USER
-                name: app-config-APP_NAME
+                name: app-config-go-cloud-k8s-user-group
           - name: DB_PASSWORD
             valueFrom:
               configMapKeyRef:
                 key: DB_PASSWORD
-                name: app-config-APP_NAME
+                name: app-config-go-cloud-k8s-user-group
           - name: DB_SSL_MODE
             valueFrom:
               configMapKeyRef:
                 key: DB_SSL_MODE
-                name: app-config-APP_NAME
+                name: app-config-go-cloud-k8s-user-group
           - name: JWT_SECRET
             valueFrom:
               configMapKeyRef:
                 key: JWT_SECRET
-                name: app-config-APP_NAME
+                name: app-config-go-cloud-k8s-user-group
           - name: JWT_ISSUER_ID
             valueFrom:
               configMapKeyRef:
                 key: JWT_ISSUER_ID
-                name: app-config-APP_NAME
+                name: app-config-go-cloud-k8s-user-group
           - name: JWT_CONTEXT_KEY
             valueFrom:
               configMapKeyRef:
                 key: JWT_CONTEXT_KEY
-                name: app-config-APP_NAME
+                name: app-config-go-cloud-k8s-user-group
           - name: JWT_DURATION_MINUTES
             valueFrom:
               configMapKeyRef:
                 key: JWT_DURATION_MINUTES
-                name: app-config-APP_NAME
+                name: app-config-go-cloud-k8s-user-group
           - name: ADMIN_USER
             valueFrom:
               configMapKeyRef:
                 key: ADMIN_USER
-                name: app-config-APP_NAME
+                name: app-config-go-cloud-k8s-user-group
           - name: ADMIN_EMAIL
             valueFrom:
               configMapKeyRef:
                 key: ADMIN_EMAIL
-                name: app-config-APP_NAME
+                name: app-config-go-cloud-k8s-user-group
           - name: ADMIN_ID
             valueFrom:
               configMapKeyRef:
                 key: ADMIN_ID
-                name: app-config-APP_NAME
+                name: app-config-go-cloud-k8s-user-group
           - name: ADMIN_EXTERNAL_ID
             valueFrom:
               configMapKeyRef:
                 key: ADMIN_EXTERNAL_ID
-                name: app-config-APP_NAME
+                name: app-config-go-cloud-k8s-user-group
           - name: ADMIN_PASSWORD
             valueFrom:
               configMapKeyRef:
                 key: ADMIN_PASSWORD
-                name: app-config-APP_NAME
+                name: app-config-go-cloud-k8s-user-group
           - name: MY_NODE_NAME
             valueFrom:
               fieldRef:
