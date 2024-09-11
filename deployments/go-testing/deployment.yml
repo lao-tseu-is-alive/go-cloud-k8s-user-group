@@ -185,7 +185,7 @@ spec:
       automountServiceAccountToken: false
       containers:
       - name: go-cloud-k8s-user-group
-        image: ghcr.io/lao-tseu-is-alive/go-cloud-k8s-user-group:v0.3.2
+        image: ghcr.io/lao-tseu-is-alive/go-cloud-k8s-user-group:v0.3.3
         imagePullPolicy: Always
         securityContext:
           seccompProfile:

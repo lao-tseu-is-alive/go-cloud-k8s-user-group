@@ -65,7 +65,7 @@ EXPOSE 8080
 
 # how to check if container is ok https://docs.docker.com/engine/reference/builder/#healthcheck
 HEALTHCHECK --start-period=5s --interval=30s --timeout=3s \
-    CMD ["curl", "--fail", "http://localhost:9090/health"]
+    CMD ["curl", "--fail", "http://localhost:8080/health"]
 
 
 # Command to run the executable
