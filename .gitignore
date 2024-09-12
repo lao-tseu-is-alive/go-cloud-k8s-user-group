@@ -29,4 +29,4 @@ MakefileTest
 /scripts/runit.sh
 /db_backups/go_cloud_k8s_user_group_goeland_data_20230328.backup
 /.env_for_github.txt
-/app-config-go-cloud-k8s-user-group.yaml
+/deployments/go-testing/app-secret-go-cloud-k8s-user-group.yaml

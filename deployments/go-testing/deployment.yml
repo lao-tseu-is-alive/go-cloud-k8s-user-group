@@ -1,8 +1,7 @@
 ---
-### TEMPLATE FOR A SERVICE AND DEPLOYMENT ON KUBERNETES just substitute the next keywords with your own values
-### go-cloud-k8s-user-group     : the name of your application or container image
+### go-cloud-k8s-user-group     : the name of  application
 ### v0.3.2  : the version of the app image to deploy
-### ghcr.io/lao-tseu-is-alive  : the prefix to your images in your container registry
+### ghcr.io/lao-tseu-is-alive  :  container registry
 apiVersion: v1
 kind: Namespace
 metadata:
@@ -131,7 +130,7 @@ spec:
   #type: NodePort                 # A port is opened on each node in your cluster via Kube proxy.
   # https://kubernetes.io/docs/concepts/services-networking/service/#loadbalancer
   type: LoadBalancer             # Adds a load balancer (from the cloud provider)
-  # k3s will deploy a daemonset listening on the given port on the host node
+  # k3s will deploy a daemon set listening on the given port on the host node
   # By default k3s have a builtin load balancer called "klipper" https://github.com/k3s-io/klipper-lb ok for one dev node.
   # It is possible to run multiple Services on the same node, as long as they use different ports.
   # in case you are using a 'real' k3s cluster with multiple nodes consider using metalLB instead
@@ -177,7 +176,7 @@ spec:
         seccompProfile:
           type: RuntimeDefault   # https://kubernetes.io/docs/tutorials/security/seccomp/
         runAsUser: 12121           # using a non privileged user
-        runAsGroup: 12121          # using the group 'gouser' created in Dockerfile
+        runAsGroup: 12121          # using a non privileged group
         fsGroup: 100             # by adding fsGroup field, all processes of the container are also part
                                  # of the supplementary group ID 100 (users).
         supplementalGroups:
@@ -192,8 +191,8 @@ spec:
             type: RuntimeDefault
           allowPrivilegeEscalation: false
           runAsNonRoot: true
-          runAsUser: 12121           # using the user 'gouser' created in Dockerfile
-          runAsGroup: 12121          # using the group 'gouser' created in Dockerfile
+          runAsUser: 12121           # using a non privileged user
+          runAsGroup: 12121          # using a non privileged group
           capabilities:
             drop:
               - 'ALL'
@@ -203,11 +202,11 @@ spec:
             name: my-http-port
         resources:
           limits:            # resource limit imposed to the pod, the container cannot utilize more res than specified
-            cpu: 1000m       # 1000 millicpu or millicores 1 or 100% of a CPU core of a running node
+            cpu: 1000m       # 1000 milli-cpu or millicores 1 or 100% of a CPU core of a running node
             memory: 128Mi
             ephemeral-storage: "2Gi"
           requests:          # explicit request of the minimum amount of resources the pod need
-            cpu: 100m        # 100 millicpu or millicores 0.1 or 10% of a CPU core of a running node
+            cpu: 100m        # 100 milli-cpu or millicores 0.1 or 10% of a CPU core of a running node
             memory: 32Mi
             ephemeral-storage: "1Gi"
         livenessProbe:           # To check the health of the Pod
@@ -228,9 +227,9 @@ spec:
         env:
           - name: PORT
             valueFrom:
-                configMapKeyRef:
+              secretKeyRef:
                     key: PORT
-                    name: app-config-go-cloud-k8s-user-group
+                    name: app-secret-go-cloud-k8s-user-group
           - name: DB_DRIVER
             valueFrom:
               configMapKeyRef:
@@ -238,14 +237,14 @@ spec:
                 name: app-config-go-cloud-k8s-user-group
           - name: DB_HOST
             valueFrom:
-              configMapKeyRef:
+              secretKeyRef:
                 key: DB_HOST
-                name: app-config-go-cloud-k8s-user-group
+                name: app-secret-go-cloud-k8s-user-group
           - name: DB_PORT
             valueFrom:
-              configMapKeyRef:
+              secretKeyRef:
                 key: DB_PORT
-                name: app-config-go-cloud-k8s-user-group
+                name: app-secret-go-cloud-k8s-user-group
           - name: DB_NAME
             valueFrom:
               configMapKeyRef:
@@ -253,14 +252,14 @@ spec:
                 name: app-config-go-cloud-k8s-user-group
           - name: DB_USER
             valueFrom:
-              configMapKeyRef:
+              secretKeyRef:
                 key: DB_USER
-                name: app-config-go-cloud-k8s-user-group
+                name: app-secret-go-cloud-k8s-user-group
           - name: DB_PASSWORD
             valueFrom:
-              configMapKeyRef:
+              secretKeyRef:
                 key: DB_PASSWORD
-                name: app-config-go-cloud-k8s-user-group
+                name: app-secret-go-cloud-k8s-user-group
           - name: DB_SSL_MODE
             valueFrom:
               configMapKeyRef:
@@ -268,19 +267,19 @@ spec:
                 name: app-config-go-cloud-k8s-user-group
           - name: JWT_SECRET
             valueFrom:
-              configMapKeyRef:
+              secretKeyRef:
                 key: JWT_SECRET
-                name: app-config-go-cloud-k8s-user-group
+                name: app-secret-go-cloud-k8s-user-group
           - name: JWT_ISSUER_ID
             valueFrom:
-              configMapKeyRef:
+              secretKeyRef:
                 key: JWT_ISSUER_ID
-                name: app-config-go-cloud-k8s-user-group
+                name: app-secret-go-cloud-k8s-user-group
           - name: JWT_CONTEXT_KEY
             valueFrom:
-              configMapKeyRef:
+              secretKeyRef:
                 key: JWT_CONTEXT_KEY
-                name: app-config-go-cloud-k8s-user-group
+                name: app-secret-go-cloud-k8s-user-group
           - name: JWT_DURATION_MINUTES
             valueFrom:
               configMapKeyRef:
@@ -288,14 +287,14 @@ spec:
                 name: app-config-go-cloud-k8s-user-group
           - name: ADMIN_USER
             valueFrom:
-              configMapKeyRef:
+              secretKeyRef:
                 key: ADMIN_USER
-                name: app-config-go-cloud-k8s-user-group
+                name: app-secret-go-cloud-k8s-user-group
           - name: ADMIN_EMAIL
             valueFrom:
-              configMapKeyRef:
+              secretKeyRef:
                 key: ADMIN_EMAIL
-                name: app-config-go-cloud-k8s-user-group
+                name: app-secret-go-cloud-k8s-user-group
           - name: ADMIN_ID
             valueFrom:
               configMapKeyRef:
@@ -308,9 +307,9 @@ spec:
                 name: app-config-go-cloud-k8s-user-group
           - name: ADMIN_PASSWORD
             valueFrom:
-              configMapKeyRef:
+              secretKeyRef:
                 key: ADMIN_PASSWORD
-                name: app-config-go-cloud-k8s-user-group
+                name: app-secret-go-cloud-k8s-user-group
           - name: MY_NODE_NAME
             valueFrom:
               fieldRef:
