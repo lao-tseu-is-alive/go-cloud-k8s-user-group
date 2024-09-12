@@ -9,7 +9,7 @@ CONTAINER_REGISTRY="ghcr.io/"
 CONTAINER_REGISTRY_USER="lao-tseu-is-alive"
 CONTAINER_REGISTRY_ID="${CONTAINER_REGISTRY}${CONTAINER_REGISTRY_USER}"
 DEPLOYMENT_TEMPLATE="scripts/k8s-deployment_template.yml"
-K8S_DEPLOYMENT=deployment.yml
+K8S_DEPLOYMENT=deployment.yaml
 echo "## Checking if ENV variable APP_NAME is already defined..."
 # checks whether APP_NAME has length equal to zero:
 if [[ -z "${APP_NAME}" ]]
@@ -71,7 +71,7 @@ echo "## will substitute GO_CONTAINER_REGISTRY_PREFIX : ${CONTAINER_REGISTRY_ID}
 sed -i "s|GO_CONTAINER_REGISTRY_PREFIX|${CONTAINER_REGISTRY_ID}|g"  "${DEPLOYMENT_DIRECTORY}"/${K8S_DEPLOYMENT}
 echo "## Checking result of substitution in image name :"
 yq  ".spec.template.spec.containers[0].image" "${DEPLOYMENT_DIRECTORY}"/${K8S_DEPLOYMENT}
-#yq -i ".spec.template.spec.containers[0].image=\"${IMAGE_FILTER}:${APP_VERSION}\"" deployments/dev/deployment.yml
+#yq -i ".spec.template.spec.containers[0].image=\"${IMAGE_FILTER}:${APP_VERSION}\"" deployments/dev/deployment.yaml
 echo "## Checking for vulnerabilities with trivy"
 if trivy image --exit-code 1 --ignore-unfixed --severity MEDIUM,HIGH,CRITICAL "${IMAGE_FILTER}:v${APP_VERSION}";
 then

@@ -1,0 +1,11 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: go-cloud-k8s-user-group-deployment
+spec:
+  template:
+    spec:
+      containers:
+        - name: go-cloud-k8s-user-group
+          ports:
+            - containerPort: 8888  # This value can be replaced by environment variable substitution.

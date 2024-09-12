@@ -30,3 +30,5 @@ MakefileTest
 /db_backups/go_cloud_k8s_user_group_goeland_data_20230328.backup
 /.env_for_github.txt
 /deployments/go-testing/app-secret-go-cloud-k8s-user-group.yaml
+/deployments/go-testing/.env_config
+/deployments/go-testing/.env_secrets

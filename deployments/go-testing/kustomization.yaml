@@ -1,0 +1,20 @@
+namespace: go-testing
+configMapGenerator:
+  - name: app-config-go-cloud-k8s-user-group
+    namespace: go-testing
+    envs:
+      - .env_config
+secretGenerator:
+  - name: app-secret-go-cloud-k8s-user-group
+    namespace: go-testing
+    envs:
+      - .env_secrets
+resources:
+  - deployment.yaml
+patches:
+  - target:
+      group: apps
+      version: v1
+      kind: Deployment
+      name: go-cloud-k8s-user-group-deployment
+    path: patch.yaml
