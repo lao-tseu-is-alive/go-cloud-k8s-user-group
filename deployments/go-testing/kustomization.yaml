@@ -1,3 +1,7 @@
+# kustomization.yaml
+# https://kubernetes.io/docs/tasks/manage-kubernetes-objects/kustomization/
+# to see what will be generated use: k kustomize deployments/go-testing/
+# to apply the generated resources use: k apply -k deployments/go-testing/
 namespace: go-testing
 configMapGenerator:
   - name: app-config-go-cloud-k8s-user-group
@@ -10,11 +14,29 @@ secretGenerator:
     envs:
       - .env_secrets
 resources:
+  - cluster-role.yaml
+  - service.yaml
   - deployment.yaml
+# https://kubectl.docs.kubernetes.io/references/kustomize/kustomization/patches/
 patches:
   - target:
       group: apps
       version: v1
       kind: Deployment
       name: go-cloud-k8s-user-group-deployment
-    path: patch.yaml
+    path: patch-deployment.yaml
+  - target:
+      group: ""
+      version: v1
+      kind: Service
+      name: go-cloud-k8s-user-group-service
+    path: patch-service.json
+  - patch: |-
+      - op: add
+        path: /rules/0/resources/-
+        value: "configmaps"
+    target:
+        group: rbac.authorization.k8s.io
+        version: v1
+        kind: ClusterRole
+        name: pod-reader-role
