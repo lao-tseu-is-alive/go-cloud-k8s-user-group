@@ -3,14 +3,13 @@ package users
 import (
 	"fmt"
 	"github.com/labstack/echo/v4"
-	"github.com/lao-tseu-is-alive/go-cloud-k8s-common-libs/pkg/goHttpEcho"
 	"net/http"
 )
 
 // GroupCreate will store a new Group in the store
 func (s Service) GroupCreate(ctx echo.Context) error {
 	handlerName := "GroupCreate"
-	goHttpEcho.TraceRequest(handlerName, ctx.Request(), s.Logger)
+	s.Logger.TraceHttpRequest(handlerName, ctx.Request())
 	// get the current user from JWT TOKEN
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := int32(claims.User.UserId)
@@ -49,7 +48,7 @@ func (s Service) GroupCreate(ctx echo.Context) error {
 // curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $token" 'http://localhost:8888/api/users' |jq
 func (s Service) GroupGet(ctx echo.Context, id int32) error {
 	handlerName := "GroupGet"
-	goHttpEcho.TraceRequest(handlerName, ctx.Request(), s.Logger)
+	s.Logger.TraceHttpRequest(handlerName, ctx.Request())
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := int32(claims.User.UserId)
 	s.Logger.Info("in %s : currentUserId: %d", handlerName, currentUserId)
@@ -67,7 +66,7 @@ func (s Service) GroupGet(ctx echo.Context, id int32) error {
 // GroupList will retrieve all Groups in the store and return then
 func (s Service) GroupList(ctx echo.Context, params GroupListParams) error {
 	handlerName := "GroupList"
-	goHttpEcho.TraceRequest(handlerName, ctx.Request(), s.Logger)
+	s.Logger.TraceHttpRequest(handlerName, ctx.Request())
 	// get the current user from JWT TOKEN
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := int32(claims.User.UserId)
@@ -83,7 +82,7 @@ func (s Service) GroupList(ctx echo.Context, params GroupListParams) error {
 // curl -v -XDELETE -H "Content-Type: application/json" -H "Authorization: Bearer $token" 'http://localhost:8888/api/groups/3' ->  204 No Content if present and delete it
 func (s Service) GroupDelete(ctx echo.Context, id int32) error {
 	handlerName := "GroupDelete"
-	goHttpEcho.TraceRequest(handlerName, ctx.Request(), s.Logger)
+	s.Logger.TraceHttpRequest(handlerName, ctx.Request())
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := int32(claims.User.UserId)
 	s.Logger.Info("in %s : currentUserId: %d", handlerName, currentUserId)
@@ -103,7 +102,7 @@ func (s Service) GroupDelete(ctx echo.Context, id int32) error {
 // GroupUpdate will store the modified information in the store for the given id
 func (s Service) GroupUpdate(ctx echo.Context, id int32) error {
 	handlerName := "GroupUpdate"
-	goHttpEcho.TraceRequest(handlerName, ctx.Request(), s.Logger)
+	s.Logger.TraceHttpRequest(handlerName, ctx.Request())
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := int32(claims.User.UserId)
 	s.Logger.Info("in %s : currentUserId: %d", handlerName, currentUserId)

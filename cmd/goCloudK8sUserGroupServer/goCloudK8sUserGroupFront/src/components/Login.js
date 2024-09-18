@@ -90,7 +90,6 @@ export const clearSessionStorage = () => {
   sessionStorage.removeItem(`${APP}_goapi_username`);
   sessionStorage.removeItem(`${APP}_goapi_email`);
   sessionStorage.removeItem(`${APP}_goapi_isadmin`);
-  sessionStorage.removeItem(`${APP}_goapi_groups`);
   sessionStorage.removeItem(`${APP}_goapi_date_expiration`);
 };
 

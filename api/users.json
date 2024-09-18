@@ -659,7 +659,7 @@
             "type": "array",
             "items": {
               "type": "integer",
-              "format": "int32"
+              "format": "int"
             }
           },
           "phone": {

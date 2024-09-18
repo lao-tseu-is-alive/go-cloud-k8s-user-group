@@ -48,7 +48,7 @@ type User struct {
 	Creator              int32               `json:"creator"`
 	Email                openapi_types.Email `json:"email"`
 	ExternalId           *int32              `json:"external_id,omitempty"`
-	GroupsId             *[]int32            `json:"groups_id,omitempty"`
+	GroupsId             *[]int              `json:"groups_id,omitempty"`
 	Id                   int32               `json:"id"`
 	InactivationReason   *string             `json:"inactivation_reason,omitempty"`
 	InactivationTime     *time.Time          `json:"inactivation_time,omitempty"`

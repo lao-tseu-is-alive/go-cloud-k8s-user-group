@@ -24,7 +24,8 @@ curl -s -XPOST -H "Content-Type: application/json" -H "Authorization: Bearer $to
 -d '{"username":"cgil", "name":"Carlos GIL", "email":"c@gil.town", "password_hash":"4acf0b39d9c4766709a3689f553ac01ab550545ffa4544dfc0b2cea82fba02a3"}'  'http://localhost:8888/api/users'
 */
 func (s Service) UserCreate(ctx echo.Context) error {
-	goHttpEcho.TraceRequest("UserCreate", ctx.Request(), s.Logger)
+	handlerName := "UserCreate"
+	s.Logger.TraceHttpRequest(handlerName, ctx.Request())
 	// get the current user from JWT TOKEN
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := claims.User.UserId
@@ -83,7 +84,8 @@ func (s Service) GetMaxId(ctx echo.Context) error {
 // to test it with curl you can try :
 // curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $token" 'http://localhost:8888/api/users' |jq
 func (s Service) UserGet(ctx echo.Context, userId int32) error {
-	goHttpEcho.TraceRequest("UserGet", ctx.Request(), s.Logger)
+	handlerName := "UserGet"
+	s.Logger.TraceHttpRequest(handlerName, ctx.Request())
 	// get the current user from JWT TOKEN
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := int32(claims.User.UserId)
@@ -107,7 +109,8 @@ func (s Service) UserGet(ctx echo.Context, userId int32) error {
 // to test it with curl you can try :
 // curl -s -H "Content-Type: application/json" -H "Authorization: Bearer $token" 'http://localhost:8888/api/users' |jq
 func (s Service) UserList(ctx echo.Context, params UserListParams) error {
-	goHttpEcho.TraceRequest("UserList", ctx.Request(), s.Logger)
+	handlerName := "UserList"
+	s.Logger.TraceHttpRequest(handlerName, ctx.Request())
 	// get the current user from JWT TOKEN
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := int32(claims.User.UserId)
@@ -124,7 +127,7 @@ func (s Service) UserList(ctx echo.Context, params UserListParams) error {
 // curl -v -XDELETE -H "Content-Type: application/json"  -H "Authorization: Bearer $token" 'http://localhost:8888/users/93333' -> 400 Bad Request
 func (s Service) UserDelete(ctx echo.Context, userId int32) error {
 	handlerName := "UserChangePassword"
-	goHttpEcho.TraceRequest(handlerName, ctx.Request(), s.Logger)
+	s.Logger.TraceHttpRequest(handlerName, ctx.Request())
 	// get the current user from JWT TOKEN
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := int32(claims.User.UserId)
@@ -167,7 +170,8 @@ func (s Service) UserDelete(ctx echo.Context, userId int32) error {
 // curl -v -XPUT -H "Content-Type: application/json" -d '{"id": 3, "task":"learn Linux", "completed": true}'  'http://localhost:8888/users/3'
 // curl -v -XPUT -H "Content-Type: application/json" -d '{"id": 3, "task":"learn Linux", "completed": false}'  'http://localhost:8888/users/3'
 func (s Service) UserUpdate(ctx echo.Context, userId int32) error {
-	goHttpEcho.TraceRequest("UserUpdate", ctx.Request(), s.Logger)
+	handlerName := "UserUpdate"
+	s.Logger.TraceHttpRequest(handlerName, ctx.Request())
 	// get the current user from JWT TOKEN
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := int32(claims.User.UserId)
@@ -215,7 +219,7 @@ func (s Service) UserUpdate(ctx echo.Context, userId int32) error {
 // (PUT /api/users/{userId}/changepassword)
 func (s Service) UserChangePassword(ctx echo.Context, userId int32) error {
 	handlerName := "UserChangePassword"
-	goHttpEcho.TraceRequest(handlerName, ctx.Request(), s.Logger)
+	s.Logger.TraceHttpRequest(handlerName, ctx.Request())
 	// get the current user from JWT TOKEN
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := int32(claims.User.UserId)
@@ -257,7 +261,8 @@ func (s Service) GetLogin(ctx echo.Context) error {
 // curl -X POST -H "Content-Type: application/json" -d '{"username": "go-admin", "password_hash": "your_pwd_hash" }'  http://localhost:8888/login
 // with the received token you can try : curl  -H "Authorization: Bearer $token "  http://localhost:8888/restricted
 func (s Service) LoginUser(ctx echo.Context) error {
-	goHttpEcho.TraceRequest("login", ctx.Request(), s.Logger)
+	handlerName := "LoginUser"
+	s.Logger.TraceHttpRequest(handlerName, ctx.Request())
 	//TODO: check if redirect_uri is passed as parameter in url, if it is then at the end do a redirect to this uri with the response
 	uLogin := new(UserLogin)
 	if err := ctx.Bind(uLogin); err != nil {
@@ -308,6 +313,7 @@ func (s Service) LoginUser(ctx echo.Context) error {
 		Email:      string(user.Email),
 		Login:      user.Username,
 		IsAdmin:    user.IsAdmin,
+		Groups:     *user.GroupsId,
 	}
 	token, err := s.Server.JwtCheck.GetTokenFromUserInfo(userInfo)
 	if err != nil {
@@ -381,7 +387,7 @@ func (s Service) ResetPassword(ctx echo.Context) error {
 
 func (s Service) GetStatus(ctx echo.Context) error {
 	handlerName := "GetStatus"
-	goHttpEcho.TraceRequest(handlerName, ctx.Request(), s.Logger)
+	s.Logger.TraceHttpRequest(handlerName, ctx.Request())
 	// get the current user from JWT TOKEN
 	claims := s.Server.JwtCheck.GetJwtCustomClaimsFromContext(ctx)
 	currentUserId := claims.User.UserId

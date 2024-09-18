@@ -426,7 +426,7 @@ components:
           type: array
           items:
             type: integer
-            format: int32
+            format: int
         phone:
           type: string
         is_locked:
